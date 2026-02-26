@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Águia Manutenção - Corretivas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_corretivas.css') }}">
+</head>
+<body>
+<div class="loading" id="loading">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span>Processando...</span>
+</div>
+
+<div class="app-container">
+    <div class="screen">
+        <div class="header-aguia">
+            <div class="back-button" onclick="window.location.href='/'">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </div>
+            <div class="header-logo" style="font-size:1.3rem;">
+                <i class="fas fa-tools"></i> Chamados Corretivos
+            </div>
+            <div class="user-info">
+                <span><i class="fas fa-user-hard-hat"></i> {{ usuario.nome }} ({{ usuario.perfil|upper }})</span>
+                <span class="badge">{{ usuario.perfil }}</span>
+            </div>
+        </div>
+
+        <div class="content-padded">
+            <div class="tabs">
+                <div class="tab active" onclick="mudarTab('novo')">Novo Chamado</div>
+                <div class="tab" onclick="mudarTab('meus')">Meus Chamados</div>
+                {% if usuario.perfil == 'pcm' %}
+                <div class="tab" onclick="mudarTab('todos')">Todos</div>
+                {% endif %}
+            </div>
+
+            <!-- Aba: Novo Chamado -->
+            <div id="tab-novo" class="tab-content active">
+                <h3>Abrir Novo Chamado</h3>
+                
+                <div class="form-group">
+                    <label>Manutentor *</label>
+                    <input type="text" value="{{ usuario.nome }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Máquina *</label>
+                    <select id="chamadoEquipamento">
+                        <option value="">-- Selecione --</option>
+                        {% for equipamento in equipamentos %}
+                        <option value="{{ equipamento.id }}">{{ equipamento.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Causa *</label>
+                    <input type="text" id="chamadoCausa" placeholder="Ex: Superaquecimento, Ruído anormal">
+                </div>
+
+                <div class="form-group">
+                    <label>Descrição do serviço *</label>
+                    <textarea rows="3" id="chamadoDescricao" placeholder="Descreva detalhadamente o problema..."></textarea>
+                </div>
+
+                <div class="datetime-group">
+                    <div>
+                        <label>Data/Hora Inicial</label>
+                        <input type="datetime-local" id="chamadoDataInicial">
+                    </div>
+                    <div>
+                        <label>Data/Hora Final</label>
+                        <input type="datetime-local" id="chamadoDataFinal">
+                    </div>
+                </div>
+
+                <button class="btn btn-dourado" onclick="abrirChamado()">
+                    <i class="fas fa-paper-plane"></i> Abrir Chamado
+                </button>
+            </div>
+
+            <!-- Aba: Meus Chamados -->
+            <div id="tab-meus" class="tab-content">
+                <h3>Meus Chamados</h3>
+                <div id="meusChamadosList">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Aba: Todos Chamados (apenas PCM) -->
+            {% if usuario.perfil == 'pcm' %}
+            <div id="tab-todos" class="tab-content">
+                <h3>Todos os Chamados</h3>
+                <div id="todosChamadosList">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes do Chamado -->
+<div class="modal" id="modalChamado">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Detalhes do Chamado</h3>
+            <button class="close-btn" onclick="fecharModalChamado()">&times;</button>
+        </div>
+        <div id="chamadoDetalhes"></div>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalChamado()">Fechar</button>
+            {% if usuario.perfil == 'pcm' %}
+            <button class="btn btn-dourado" style="flex:1;" id="btnAtualizarStatus" onclick="atualizarStatusChamado()">Atualizar Status</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/modulo_corretivas.js') }}"></script>
+</body>
+</html>

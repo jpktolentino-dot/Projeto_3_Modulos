@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Águia Manutenção - Leitura</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_leitura.css') }}">
+</head>
+<body>
+<div class="loading" id="loading">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span>Carregando...</span>
+</div>
+
+<div class="app-container">
+    <div class="screen">
+        <div class="header-aguia">
+            <div class="back-button" onclick="window.location.href='/'">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </div>
+            <div class="header-logo" style="font-size:1.3rem;">
+                <i class="fas fa-book-open"></i> Consulta de Manuais
+            </div>
+            <div class="user-info">
+                <span><i class="fas fa-user-cog"></i> {{ usuario.nome }} ({{ usuario.perfil|upper }})</span>
+                <span class="badge">{% if usuario.perfil == 'pcm' %}ADM{% else %}USER{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="content-padded">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Buscar equipamento..." id="searchInput" onkeyup="filtrarEquipamentos()">
+            </div>
+
+            <h3>Manuais Disponíveis</h3>
+            <div class="card-list" id="equipamentosList">
+                {% for equipamento in equipamentos %}
+                <div class="card-item equipamento-item" data-nome="{{ equipamento.nome|lower }} {{ equipamento.modelo|lower }} {{ equipamento.fabricante|lower }}">
+                    <div class="card-icon">
+                        {% if 'prensa' in equipamento.nome|lower %}
+                        <i class="fas fa-cog"></i>
+                        {% elif 'robô' in equipamento.nome|lower or 'robot' in equipamento.nome|lower %}
+                        <i class="fas fa-robot"></i>
+                        {% elif 'compressor' in equipamento.nome|lower %}
+                        <i class="fas fa-compress"></i>
+                        {% elif 'torno' in equipamento.nome|lower %}
+                        <i class="fas fa-cut"></i>
+                        {% else %}
+                        <i class="fas fa-industry"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3>{{ equipamento.nome }}</h3>
+                        <p style="color:#5a6f84;">{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                    </div>
+                    <i class="fas fa-download download-btn" onclick="baixarManual({{ equipamento.id }})" title="Baixar manual"></i>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if usuario.perfil == 'pcm' %}
+            <button class="btn btn-dourado" style="margin-top:24px;" onclick="abrirModalCadastro()">
+                <i class="fas fa-plus-circle"></i> Cadastrar Equipamento
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro de Equipamento -->
+<div class="modal" id="modalCadastro">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Cadastrar Equipamento</h3>
+            <button class="close-btn" onclick="fecharModalCadastro()">&times;</button>
+        </div>
+        <form id="formCadastro" onsubmit="cadastrarEquipamento(event)">
+            <div class="form-group">
+                <label>Nome do Equipamento *</label>
+                <input type="text" id="equipamentoNome" required>
+            </div>
+            <div class="form-group">
+                <label>Modelo</label>
+                <input type="text" id="equipamentoModelo">
+            </div>
+            <div class="form-group">
+                <label>Fabricante</label>
+                <input type="text" id="equipamentoFabricante">
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="equipamentoTipo">
+                    <option value="Hidráulico">Hidráulico</option>
+                    <option value="Pneumático">Pneumático</option>
+                    <option value="Elétrico">Elétrico</option>
+                    <option value="Mecânico">Mecânico</option>
+                    <option value="Robótica">Robótica</option>
+                    <option value="Usinagem">Usinagem</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Link do Manual (PDF)</label>
+                <input type="url" id="equipamentoManual" placeholder="https://...">
+            </div>
+            <button type="submit" class="btn btn-dourado">Salvar Equipamento</button>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/modulo_leitura.js') }}"></script>
+</body>
+</html>

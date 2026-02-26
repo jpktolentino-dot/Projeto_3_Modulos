@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Águia Manutenção - Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_checklist.css') }}">
+</head>
+<body>
+<div class="loading" id="loading">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span>Processando...</span>
+</div>
+
+<div class="app-container">
+    <div class="screen">
+        <div class="header-aguia">
+            <div class="back-button" onclick="window.location.href='/'">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </div>
+            <div class="header-logo" style="font-size:1.3rem;">
+                <i class="fas fa-calendar-check"></i> Checklist Mensal
+            </div>
+            <div class="user-info">
+                <span><i class="fas fa-user-hard-hat"></i> {{ usuario.nome }} ({{ usuario.perfil|upper }})</span>
+                <span class="badge">{{ usuario.perfil }}</span>
+            </div>
+        </div>
+
+        <div class="content-padded">
+            <div style="display:flex; gap:8px; margin-bottom:24px;">
+                <span class="status-tag"><i class="far fa-calendar"></i> {{ mes_ano }}</span>
+                {% if checklist %}
+                    {% if checklist.status == 'pendente' %}
+                    <span class="status-tag dourado">Em andamento</span>
+                    {% else %}
+                    <span class="status-tag" style="background:#28a745; color:white;">Concluído</span>
+                    {% endif %}
+                {% else %}
+                <span class="status-tag dourado">Novo checklist disponível</span>
+                {% endif %}
+            </div>
+
+            {% if not checklist %}
+            <div class="equipamento-selector">
+                <label style="font-weight:600;">Selecione o equipamento para iniciar o checklist:</label>
+                <select id="equipamentoSelect">
+                    <option value="">-- Escolha um equipamento --</option>
+                    {% for equipamento in equipamentos %}
+                    <option value="{{ equipamento.id }}">{{ equipamento.nome }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-dourado" style="margin-top:15px;" onclick="iniciarChecklist()">
+                    <i class="fas fa-play"></i> Iniciar Checklist
+                </button>
+            </div>
+            {% endif %}
+
+            {% if checklist %}
+            <div class="card-item">
+                <h3><i class="fas fa-compress" style="color:#f2b705;"></i> {{ checklist.equipamento.nome }}</h3>
+                
+                <div style="margin-top:20px;">
+                    {% for item in checklist.itens %}
+                    <div class="checklist-item">
+                        <input type="checkbox" 
+                               {% if item.concluido %}checked{% endif %} 
+                               onchange="atualizarItem({{ checklist.id }}, {{ item.id }}, this.checked)">
+                        <span style="{% if item.concluido %}text-decoration: line-through; color:#6c757d;{% endif %}">
+                            {{ item.descricao }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="obs-box">
+                    <label style="font-weight:600;">Observações:</label>
+                    <textarea rows="3" id="observacoes" placeholder="Registre observações importantes...">{{ checklist.observacoes or '' }}</textarea>
+                </div>
+
+                <button class="btn btn-dourado" onclick="finalizarChecklist({{ checklist.id }})">
+                    <i class="fas fa-envelope"></i> Concluir & Enviar Relatório
+                </button>
+            </div>
+            {% endif %}
+
+            {% if usuario.perfil == 'pcm' and checklist and checklist.status == 'concluido' %}
+            <button class="btn btn-outline" style="margin-top:15px;" onclick="visualizarRelatorio({{ checklist.id }})">
+                <i class="fas fa-file-pdf"></i> Visualizar Relatório
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação -->
+<div class="modal" id="modalConfirmacao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Ação</h3>
+            <button class="close-btn" onclick="fecharModalConfirmacao()">&times;</button>
+        </div>
+        <p id="modalMensagem"></p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button class="btn btn-dourado" style="flex:1;" id="modalConfirmarBtn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/modulo_checklist.js') }}"></script>
+</body>
+</html>
