@@ -48,6 +48,10 @@ async function fazerLogin(modulo) {
             body: JSON.stringify({ login, senha })
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -58,7 +62,7 @@ async function fazerLogin(modulo) {
         }
     } catch (error) {
         hideLoading();
-        showError(modulo, 'Erro de conexão com o servidor');
         console.error('Erro:', error);
+        showError(modulo, 'Erro de conexão com o servidor');
     }
 }

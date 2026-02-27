@@ -11,9 +11,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_corretivas.css') }}">
 </head>
 <body>
+<!-- Substitua o loading atual por este: -->
 <div class="loading" id="loading">
-    <i class="fas fa-circle-notch fa-spin"></i>
-    <span>Processando...</span>
+    <div class="loading-content">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>Processando...</span>
+    </div>
 </div>
 
 <div class="app-container">

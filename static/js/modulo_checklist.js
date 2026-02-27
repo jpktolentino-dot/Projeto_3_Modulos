@@ -6,38 +6,38 @@
         document.getElementById('loading').classList.remove('active');
     }
 
-    async function iniciarChecklist() {
-        const equipamentoId = document.getElementById('equipamentoSelect').value;
-        
-        if (!equipamentoId) {
-            alert('Selecione um equipamento');
-            return;
-        }
+   async function iniciarChecklist() {
+    const equipamentoId = document.getElementById('equipamentoSelect').value;
+    
+    if (!equipamentoId) {
+        alert('Selecione um equipamento');
+        return;
+    }
 
-        showLoading();
+    showLoading();
 
-        try {
-            const response = await fetch('/api/checklist/iniciar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ equipamento_id: equipamentoId })
-            });
+    try {
+        const response = await fetch('/api/checklist/iniciar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ equipamento_id: equipamentoId })
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Erro: ' + data.message);
-                hideLoading();
-            }
-        } catch (error) {
-            alert('Erro de conexão');
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Erro: ' + data.message);
             hideLoading();
         }
+    } catch (error) {
+        alert('Erro de conexão');
+        hideLoading();
     }
+}
 
     async function atualizarItem(checklistId, itemId, concluido) {
         try {

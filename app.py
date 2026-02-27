@@ -64,6 +64,16 @@ class ItemChecklist(db.Model):
     
     checklist = db.relationship('Checklist', backref='itens')
 
+class ItemPadraoChecklist(db.Model):
+    __tablename__ = 'itens_padrao_checklist'
+    id = db.Column(db.Integer, primary_key=True)
+    equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamentos.id'))
+    sistema = db.Column(db.String(100))  # Ex: "Motor Diesel", "Cabine", etc.
+    descricao = db.Column(db.String(300), nullable=False)
+    ordem = db.Column(db.Integer, default=0)
+    
+    equipamento = db.relationship('Equipamento', backref='itens_padrao')
+
 class ChamadoCorretivo(db.Model):
     __tablename__ = 'chamados'
     id = db.Column(db.Integer, primary_key=True)
@@ -246,6 +256,7 @@ def iniciar_checklist():
     dados = request.get_json()
     usuario_id = session['usuario_id']
     mes_ano = datetime.now().strftime('%m/%Y')
+    equipamento_id = dados['equipamento_id']
     
     # Verifica se já existe checklist para este mês
     existente = Checklist.query.filter_by(
@@ -257,7 +268,7 @@ def iniciar_checklist():
         return jsonify({'success': False, 'message': 'Checklist já existe para este mês'})
     
     checklist = Checklist(
-        equipamento_id=dados['equipamento_id'],
+        equipamento_id=equipamento_id,
         operador_id=usuario_id,
         mes_ano=mes_ano,
         status='pendente'
@@ -266,24 +277,38 @@ def iniciar_checklist():
     db.session.add(checklist)
     db.session.flush()
     
-    # Itens padrão do checklist
-    itens_padrao = [
-        'Verificar nível de óleo',
-        'Limpar filtros de ar',
-        'Testar válvula de segurança',
-        'Verificar correias',
-        'Inspecionar conexões elétricas',
-        'Lubrificar partes móveis',
-        'Verificar pressão de trabalho',
-        'Inspecionar vazamentos'
-    ]
+    # Busca os itens padrão para este equipamento
+    itens_padrao = ItemPadraoChecklist.query.filter_by(
+        equipamento_id=equipamento_id
+    ).order_by(ItemPadraoChecklist.ordem).all()
     
-    for item_desc in itens_padrao:
-        item = ItemChecklist(
-            checklist_id=checklist.id,
-            descricao=item_desc
-        )
-        db.session.add(item)
+    if itens_padrao:
+        # Usa os itens específicos do equipamento
+        for item_padrao in itens_padrao:
+            item = ItemChecklist(
+                checklist_id=checklist.id,
+                descricao=f"{item_padrao.sistema} - {item_padrao.descricao}"
+            )
+            db.session.add(item)
+    else:
+        # Itens padrão genéricos para equipamentos sem checklist específico
+        itens_genericos = [
+            'Verificar nível de óleo',
+            'Limpar filtros de ar',
+            'Testar válvula de segurança',
+            'Verificar correias',
+            'Inspecionar conexões elétricas',
+            'Lubrificar partes móveis',
+            'Verificar pressão de trabalho',
+            'Inspecionar vazamentos'
+        ]
+        
+        for item_desc in itens_genericos:
+            item = ItemChecklist(
+                checklist_id=checklist.id,
+                descricao=item_desc
+            )
+            db.session.add(item)
     
     db.session.commit()
     
@@ -442,8 +467,163 @@ def init_db():
             Equipamento(nome='Compressor Atlas', modelo='AT-1500', fabricante='Atlas Copco', tipo='Pneumático'),
             Equipamento(nome='Torno Mecânico CNC', modelo='TNC-42', fabricante='Romi', tipo='Usinagem'),
             Equipamento(nome='Fresadora Universal', modelo='FU-5', fabricante='Bridgeport', tipo='Usinagem'),
+            Equipamento(
+                nome='Caminhão Trator DAF 510 6x2', 
+                modelo='DAF 510', 
+                fabricante='DAF', 
+                tipo='Veículo Pesado',
+                manual_pdf='/static/manuais/daf_510.pdf'
+            ),
         ]
         db.session.add_all(equipamentos)
+        db.session.flush()  # Para obter os IDs
+        
+        # Adicionar itens padrão para o DAF 510
+        daf = Equipamento.query.filter_by(nome='Caminhão Trator DAF 510 6x2').first()
+        
+        if daf:
+            itens_daf = [
+                # SISTEMA HIDRÁULICO
+                {'sistema': 'Bomba Hidráulica', 'descricao': 'Mangueiras - vazamentos', 'ordem': 1},
+                {'sistema': 'Bomba Hidráulica', 'descricao': 'Bomba - ruídos anormais', 'ordem': 2},
+                {'sistema': 'Comando Hidráulico', 'descricao': 'Mangueiras, tubos e vazamentos', 'ordem': 3},
+                
+                # CABINE
+                {'sistema': 'Cabine', 'descricao': 'Ruídos internos', 'ordem': 4},
+                {'sistema': 'Cabine', 'descricao': 'Banco do operador/motorista e Cinto de Segurança', 'ordem': 5},
+                {'sistema': 'Cabine', 'descricao': 'Braço e palheta do limpador parabrisas', 'ordem': 6},
+                {'sistema': 'Cabine', 'descricao': 'Buzina', 'ordem': 7},
+                {'sistema': 'Cabine', 'descricao': 'Canopla de câmbio', 'ordem': 8},
+                {'sistema': 'Cabine', 'descricao': 'Chefe diário de bordo do operador', 'ordem': 9},
+                {'sistema': 'Cabine', 'descricao': 'Cinto de segurança - Passageiros', 'ordem': 10},
+                {'sistema': 'Cabine', 'descricao': 'Condições dos bancos e do piso', 'ordem': 11},
+                {'sistema': 'Cabine', 'descricao': 'Escada de acesso', 'ordem': 12},
+                {'sistema': 'Cabine', 'descricao': 'Espelho retrovisor', 'ordem': 13},
+                {'sistema': 'Cabine', 'descricao': 'Falhas refletivas', 'ordem': 14},
+                {'sistema': 'Cabine', 'descricao': 'Farol alto', 'ordem': 15},
+                {'sistema': 'Cabine', 'descricao': 'Farol baixo', 'ordem': 16},
+                {'sistema': 'Cabine', 'descricao': 'Folga na alavanca de câmbio', 'ordem': 17},
+                {'sistema': 'Cabine', 'descricao': 'Funcionamento/acionamento dos pedais', 'ordem': 18},
+                {'sistema': 'Cabine', 'descricao': 'Mangueiras/cabos obstruindo os pedais', 'ordem': 19},
+                {'sistema': 'Cabine', 'descricao': 'Iluminação interna', 'ordem': 20},
+                {'sistema': 'Cabine', 'descricao': 'Infiltração de poeira e água', 'ordem': 21},
+                {'sistema': 'Cabine', 'descricao': 'Limpeza e asseio', 'ordem': 22},
+                {'sistema': 'Cabine', 'descricao': 'Luz de freio', 'ordem': 23},
+                {'sistema': 'Cabine', 'descricao': 'Luz de placa', 'ordem': 24},
+                {'sistema': 'Cabine', 'descricao': 'Luz de ré', 'ordem': 25},
+                {'sistema': 'Cabine', 'descricao': 'Macaco, chave e triângulo', 'ordem': 26},
+                {'sistema': 'Cabine', 'descricao': 'Para-brisas - riscos e trincas', 'ordem': 27},
+                {'sistema': 'Cabine', 'descricao': 'Pisca direito', 'ordem': 28},
+                {'sistema': 'Cabine', 'descricao': 'Pisca esquerdo', 'ordem': 29},
+                {'sistema': 'Cabine', 'descricao': 'Portas da Cabine, Fechaduras e Saída de Emergência', 'ordem': 30},
+                {'sistema': 'Cabine', 'descricao': 'Sirene de Ré/Alarme de Deslocamento/Câmera de Ré', 'ordem': 31},
+                {'sistema': 'Cabine', 'descricao': 'Suporte de bateria', 'ordem': 32},
+                {'sistema': 'Cabine', 'descricao': 'Tacógrafo', 'ordem': 33},
+                {'sistema': 'Cabine', 'descricao': 'Freio de estacionamento', 'ordem': 34},
+                
+                # BATERIA
+                {'sistema': 'Caixa da Bateria', 'descricao': 'Cabos de bateria, aterramento e chave geral', 'ordem': 35},
+                {'sistema': 'Caixa da Bateria', 'descricao': 'Polos derretidos da bateria e limpeza do compartimento', 'ordem': 36},
+                
+                # CHASSI
+                {'sistema': 'Chassi', 'descricao': 'Estrutura do chassi', 'ordem': 37},
+                {'sistema': 'Chassi', 'descricao': 'Para-barro', 'ordem': 38},
+                {'sistema': 'Chassi', 'descricao': 'Para-barro - carreta', 'ordem': 39},
+                {'sistema': 'Chassi', 'descricao': 'Pára-choques', 'ordem': 40},
+                
+                # COMBATE INCÊNDIO
+                {'sistema': 'Combate Incêndio', 'descricao': 'Carga e validade dos extintores de incêndio', 'ordem': 41},
+                
+                # DIREÇÃO/ARTICULAÇÃO
+                {'sistema': 'Direção', 'descricao': 'Mangueiras da direção', 'ordem': 42},
+                {'sistema': 'Direção', 'descricao': 'Trincas/Folgas na articulação do chassi', 'ordem': 43},
+                {'sistema': 'Direção', 'descricao': 'Vazamentos no sistema', 'ordem': 44},
+                {'sistema': 'Direção', 'descricao': 'Caixa de direção', 'ordem': 45},
+                {'sistema': 'Direção', 'descricao': 'Terminais da barra de direção direito', 'ordem': 46},
+                {'sistema': 'Direção', 'descricao': 'Terminais da barra de direção esquerda', 'ordem': 47},
+                {'sistema': 'Direção', 'descricao': 'Terminais da caixa de direção', 'ordem': 48},
+                
+                # DOCUMENTAÇÃO
+                {'sistema': 'Documentação', 'descricao': 'Aferição do tacógrafo', 'ordem': 49},
+                {'sistema': 'Documentação', 'descricao': 'Carteira de motorista D ou E', 'ordem': 50},
+                {'sistema': 'Documentação', 'descricao': 'Licenciamento', 'ordem': 51},
+                
+                # FREIO
+                {'sistema': 'Freio', 'descricao': 'Cilindros de freio', 'ordem': 52},
+                {'sistema': 'Freio', 'descricao': 'Mangueiras de freio', 'ordem': 53},
+                {'sistema': 'Freio', 'descricao': 'Vazamentos no sistema de freio', 'ordem': 54},
+                {'sistema': 'Freio', 'descricao': 'Lona, flexível e campanas de freio dianteiro', 'ordem': 55},
+                {'sistema': 'Freio', 'descricao': 'Lona, flexível e campanas de freio traseiro', 'ordem': 56},
+                {'sistema': 'Freio', 'descricao': 'Vazamento de ar/óleo de freio', 'ordem': 57},
+                
+                # MOTOR DIESEL
+                {'sistema': 'Motor Diesel', 'descricao': 'Vazamentos em geral', 'ordem': 58},
+                {'sistema': 'Motor Diesel', 'descricao': 'Ruídos anormais', 'ordem': 59},
+                {'sistema': 'Motor Diesel', 'descricao': 'Cano de escape', 'ordem': 60},
+                {'sistema': 'Motor Diesel', 'descricao': 'Cabo do motor diesel', 'ordem': 61},
+                {'sistema': 'Motor Diesel', 'descricao': 'Chicotes elétricos das laterais do bloco do motor (isolamento)', 'ordem': 62},
+                {'sistema': 'Motor Diesel', 'descricao': 'Chicotes elétricos do ALTERNADOR (isolamento e sinais de derretimento)', 'ordem': 63},
+                {'sistema': 'Motor Diesel', 'descricao': 'Chicotes elétricos do MOTOR DE PARTIDA (isolamento e sinais de derretimento)', 'ordem': 64},
+                {'sistema': 'Motor Diesel', 'descricao': 'Chicotes elétricos que passam por baixo do cárter (isolamento)', 'ordem': 65},
+                {'sistema': 'Motor Diesel', 'descricao': 'Chicotes elétricos que passam por cima do cabeçote (isolamento)', 'ordem': 66},
+                {'sistema': 'Motor Diesel', 'descricao': 'Compressor ar condicionado', 'ordem': 67},
+                {'sistema': 'Motor Diesel', 'descricao': 'Correias', 'ordem': 68},
+                {'sistema': 'Motor Diesel', 'descricao': 'Coxim de fixação do motor', 'ordem': 69},
+                {'sistema': 'Motor Diesel', 'descricao': 'Emissão de fumaça preta', 'ordem': 70},
+                {'sistema': 'Motor Diesel', 'descricao': 'Escapamento e Silencioso', 'ordem': 71},
+                {'sistema': 'Motor Diesel', 'descricao': 'Filtro de ar', 'ordem': 72},
+                {'sistema': 'Motor Diesel', 'descricao': 'Hélice do radiador', 'ordem': 73},
+                {'sistema': 'Motor Diesel', 'descricao': 'Proteção e Mangueira do radiador de água', 'ordem': 74},
+                {'sistema': 'Motor Diesel', 'descricao': 'Manta térmica do escapamento, silencioso e turbina', 'ordem': 75},
+                {'sistema': 'Motor Diesel', 'descricao': 'Nível de óleo do motor', 'ordem': 76},
+                {'sistema': 'Motor Diesel', 'descricao': 'Radiador água e Ar condicionado (coxins, fixação e vazamentos)', 'ordem': 77},
+                {'sistema': 'Motor Diesel', 'descricao': 'Radiador óleo', 'ordem': 78},
+                {'sistema': 'Motor Diesel', 'descricao': 'Sensores de alarme', 'ordem': 79},
+                {'sistema': 'Motor Diesel', 'descricao': 'Mangueira de Lubrificação da Turbina', 'ordem': 80},
+                
+                # PNEUS
+                {'sistema': 'Pneus', 'descricao': 'Realizar APRM - Serviços de Borracharia', 'ordem': 81},
+                {'sistema': 'Pneus', 'descricao': 'Calibragem', 'ordem': 82},
+                {'sistema': 'Pneus', 'descricao': 'Desgastes', 'ordem': 83},
+                {'sistema': 'Pneus', 'descricao': 'Pneu sobressalente', 'ordem': 84},
+                {'sistema': 'Pneus', 'descricao': 'Posição de rodagem', 'ordem': 85},
+                {'sistema': 'Pneus', 'descricao': 'Rasgos nas Laterais EXTERNAS, INTERNAS e BANDA DE RODAGEM', 'ordem': 86},
+                
+                # TANGUÉ COMBUSTÍVEL
+                {'sistema': 'Tanque Combustível', 'descricao': 'Limpeza do tanque', 'ordem': 87},
+                {'sistema': 'Tanque Combustível', 'descricao': 'Peneira e respiro', 'ordem': 88},
+                {'sistema': 'Tanque Combustível', 'descricao': 'Sensor de nível', 'ordem': 89},
+                {'sistema': 'Tanque Combustível', 'descricao': 'Mangueiras de combustível', 'ordem': 90},
+                
+                # TANGUÉ HIDRÁULICO
+                {'sistema': 'Tanque Hidráulico', 'descricao': 'Nível de óleo hidráulico', 'ordem': 91},
+                {'sistema': 'Tanque Hidráulico', 'descricao': 'Sensores de temperatura', 'ordem': 92},
+                
+                # TRANSMISSÃO
+                {'sistema': 'Transmissão', 'descricao': 'Mangueiras da transmissão', 'ordem': 93},
+                {'sistema': 'Transmissão', 'descricao': 'Vazamentos na transmissão', 'ordem': 94},
+                {'sistema': 'Transmissão', 'descricao': 'Vareta de Nível', 'ordem': 95},
+                {'sistema': 'Transmissão', 'descricao': 'Ruídos anormais', 'ordem': 96},
+                {'sistema': 'Transmissão', 'descricao': 'Chicotes elétricos da transmissão', 'ordem': 97},
+                {'sistema': 'Transmissão', 'descricao': 'Cardan dianteiro (Cruzetas, parafusos)', 'ordem': 98},
+                {'sistema': 'Transmissão', 'descricao': 'Cardan traseiro (Cruzetas, parafusos)', 'ordem': 99},
+                {'sistema': 'Transmissão', 'descricao': 'Cruzetas do cardã', 'ordem': 100},
+                {'sistema': 'Transmissão', 'descricao': 'Cintas de segurança do cardã', 'ordem': 101},
+                {'sistema': 'Transmissão', 'descricao': 'Flange do Cardã', 'ordem': 102},
+                {'sistema': 'Transmissão', 'descricao': 'Diferencial dianteiro e traseiro', 'ordem': 103},
+                {'sistema': 'Transmissão', 'descricao': 'Vazamento de óleo do diferencial', 'ordem': 104},
+                {'sistema': 'Transmissão', 'descricao': 'Prisioneiros/porca de roda', 'ordem': 105},
+                {'sistema': 'Transmissão', 'descricao': 'Verificar desgaste das cremalheiras', 'ordem': 106}
+            ]
+            
+            for item in itens_daf:
+                item_padrao = ItemPadraoChecklist(
+                    equipamento_id=daf.id,
+                    sistema=item['sistema'],
+                    descricao=item['descricao'],
+                    ordem=item['ordem']
+                )
+                db.session.add(item_padrao)
     
     db.session.commit()
 
