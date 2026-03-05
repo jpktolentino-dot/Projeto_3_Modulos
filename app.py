@@ -235,17 +235,34 @@ def modulo_checklist():
     data_atual = datetime.now()
     mes_ano = data_atual.strftime('%m/%Y')
     
-    # Busca checklist do mês atual para o operador
-    checklist = Checklist.query.filter_by(
+    # Verificar se é para criar um novo checklist
+    novo = request.args.get('new', type=int)
+    
+    # Busca TODOS os checklists do operador para este mês
+    checklists = Checklist.query.filter_by(
         operador_id=usuario.id,
         mes_ano=mes_ano
-    ).first()
+    ).all()
+    
+    # Pega o ID do checklist selecionado (se houver)
+    checklist_id = request.args.get('checklist_id', type=int)
+    
+    # Se for para criar novo ou não há checklists, não seleciona nenhum
+    if novo or not checklists:
+        checklist = None
+    elif checklist_id:
+        # Se um checklist específico foi selecionado, busca ele
+        checklist = Checklist.query.get(checklist_id)
+    else:
+        # Se não, mostra o primeiro (ou None)
+        checklist = checklists[0] if checklists else None
     
     equipamentos = Equipamento.query.all()
     
     return render_template('modulo_checklist.html',
                          usuario=usuario,
                          checklist=checklist,
+                         checklists=checklists,  # Passa a lista completa
                          equipamentos=equipamentos,
                          mes_ano=mes_ano)
 
@@ -258,14 +275,8 @@ def iniciar_checklist():
     mes_ano = datetime.now().strftime('%m/%Y')
     equipamento_id = dados['equipamento_id']
     
-    # Verifica se já existe checklist para este mês
-    existente = Checklist.query.filter_by(
-        operador_id=usuario_id,
-        mes_ano=mes_ano
-    ).first()
-    
-    if existente:
-        return jsonify({'success': False, 'message': 'Checklist já existe para este mês'})
+    # VERIFICAÇÃO REMOVIDA - Agora permite múltiplos checklists por mês
+    # (desde que sejam para equipamentos diferentes)
     
     checklist = Checklist(
         equipamento_id=equipamento_id,
@@ -347,6 +358,26 @@ def finalizar_checklist(id):
     # send_email_report(checklist)
     
     return jsonify({'success': True, 'message': 'Checklist concluído com sucesso!'})
+
+# Adicione esta nova rota após a rota /api/checklist/<int:id>/finalizar
+
+@app.route('/api/checklist/<int:id>', methods=['DELETE'])
+@login_required
+def excluir_checklist(id):
+    """Exclui um checklist (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    checklist = Checklist.query.get_or_404(id)
+    
+    # Exclui os itens do checklist primeiro
+    for item in checklist.itens:
+        db.session.delete(item)
+    
+    db.session.delete(checklist)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Checklist excluído com sucesso'})
 
 # ==================== MÓDULO CORRETIVAS ====================
 
@@ -653,6 +684,104 @@ def template_corretivas():
     usuario = Usuario.query.get(session['usuario_id'])
     equipamentos = Equipamento.query.all()
     return render_template('modulo_corretivas.html', usuario=usuario, equipamentos=equipamentos)
+
+# ==================== ROTAS PARA GERENCIAMENTO DE EQUIPAMENTOS (NOVAS) ====================
+
+@app.route('/api/equipamentos/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_equipamento(id):
+    """Atualiza um equipamento existente (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    dados = request.get_json()
+    equipamento = Equipamento.query.get_or_404(id)
+    
+    equipamento.nome = dados.get('nome', equipamento.nome)
+    equipamento.modelo = dados.get('modelo', equipamento.modelo)
+    equipamento.fabricante = dados.get('fabricante', equipamento.fabricante)
+    equipamento.tipo = dados.get('tipo', equipamento.tipo)
+    equipamento.manual_pdf = dados.get('manual_pdf', equipamento.manual_pdf)
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Equipamento atualizado com sucesso'})
+
+@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['GET'])
+@login_required
+def listar_itens_padrao(id):
+    """Lista os itens padrão de um equipamento"""
+    equipamento = Equipamento.query.get_or_404(id)
+    itens = ItemPadraoChecklist.query.filter_by(equipamento_id=id).order_by(ItemPadraoChecklist.ordem).all()
+    
+    return jsonify([{
+        'id': item.id,
+        'sistema': item.sistema,
+        'descricao': item.descricao,
+        'ordem': item.ordem
+    } for item in itens])
+
+@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['POST'])
+@login_required
+def adicionar_item_padrao(id):
+    """Adiciona um item padrão ao equipamento (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    dados = request.get_json()
+    
+    item = ItemPadraoChecklist(
+        equipamento_id=id,
+        sistema=dados.get('sistema', 'Geral'),
+        descricao=dados['descricao'],
+        ordem=dados.get('ordem', 0)
+    )
+    
+    db.session.add(item)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'id': item.id})
+
+@app.route('/api/equipamentos/itens-padrao/<int:id>', methods=['DELETE'])
+@login_required
+def deletar_item_padrao(id):
+    """Deleta um item padrão (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    item = ItemPadraoChecklist.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/equipamentos/<int:id>/checklists', methods=['GET'])
+@login_required
+def listar_checklists_equipamento(id):
+    """Lista todos os checklists de um equipamento"""
+    checklists = Checklist.query.filter_by(equipamento_id=id).order_by(Checklist.data_execucao.desc()).all()
+    
+    return jsonify([{
+        'id': c.id,
+        'mes_ano': c.mes_ano,
+        'operador': c.operador.nome if c.operador else 'N/A',
+        'status': c.status,
+        'data_execucao': c.data_execucao.strftime('%d/%m/%Y %H:%M') if c.data_execucao else 'Pendente'
+    } for c in checklists])
+
+@app.route('/api/equipamentos/<int:id>/chamados', methods=['GET'])
+@login_required
+def listar_chamados_equipamento(id):
+    """Lista todos os chamados de um equipamento"""
+    chamados = ChamadoCorretivo.query.filter_by(equipamento_id=id).order_by(ChamadoCorretivo.data_abertura.desc()).all()
+    
+    return jsonify([{
+        'id': c.id,
+        'causa': c.causa,
+        'descricao': c.descricao,
+        'status': c.status,
+        'data_abertura': c.data_abertura.strftime('%d/%m/%Y %H:%M')
+    } for c in chamados])
 
 if __name__ == '__main__':
     app.run(debug=True)

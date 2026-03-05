@@ -9,9 +9,150 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_checklist.css') }}">
+    <style>
+        .equipamento-card {
+            background: #f9fbfd;
+            border: 1px solid #e0e5ec;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .equipamento-card.clickable {
+            cursor: pointer;
+        }
+        .equipamento-card.clickable:hover {
+            border-color: #f2b705;
+            box-shadow: 0 2px 8px rgba(242, 183, 5, 0.2);
+        }
+        .equipamento-icon {
+            width: 48px;
+            height: 48px;
+            background: #e9eff5;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0a1c2f;
+            font-size: 1.6rem;
+        }
+        .equipamento-info {
+            flex: 1;
+        }
+        .equipamento-info h4 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .equipamento-info p {
+            color: #5a6f84;
+            font-size: 0.9rem;
+        }
+        .equipamento-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5a6f84;
+        }
+        .action-btn:hover {
+            background: #e9eff5;
+        }
+        .action-btn.delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+        .action-btn.edit:hover {
+            background: #f2b705;
+            color: #0a1c2f;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-pendente {
+            background: #f2b705;
+            color: #0a1c2f;
+        }
+        .status-concluido {
+            background: #28a745;
+            color: white;
+        }
+        .sem-checklist {
+            text-align: center;
+            padding: 40px 20px;
+            background: #f5f7fa;
+            border-radius: 4px;
+            color: #5a6f84;
+        }
+        .sem-checklist i {
+            font-size: 3rem;
+            color: #f2b705;
+            margin-bottom: 15px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f2b705;
+        }
+        .admin-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0a1c2f;
+        }
+        .admin-title i {
+            color: #f2b705;
+            font-size: 1.5rem;
+        }
+        .item-padrao {
+            background: #f9fbfd;
+            border: 1px solid #e0e5ec;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .item-padrao-info {
+            flex: 1;
+        }
+        .item-padrao-sistema {
+            font-size: 0.85rem;
+            color: #f2b705;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .item-padrao-descricao {
+            font-size: 0.95rem;
+        }
+        .item-padrao-ordem {
+            font-size: 0.8rem;
+            color: #5a6f84;
+        }
+    </style>
 </head>
 <body>
-<!-- Substitua o loading atual por este: -->
 <div class="loading" id="loading">
     <div class="loading-content">
         <i class="fas fa-circle-notch fa-spin"></i>
@@ -35,72 +176,296 @@
         </div>
 
         <div class="content-padded">
-            <div style="display:flex; gap:8px; margin-bottom:24px;">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <span class="status-tag"><i class="far fa-calendar"></i> {{ mes_ano }}</span>
-                {% if checklist %}
-                    {% if checklist.status == 'pendente' %}
-                    <span class="status-tag dourado">Em andamento</span>
-                    {% else %}
-                    <span class="status-tag" style="background:#28a745; color:white;">Concluído</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" style="width: auto; padding: 10px 16px;" onclick="window.location.href='/modulo/checklist?new=1'">
+                        <i class="fas fa-plus"></i> Novo Checklist
+                    </button>
+                    {% if usuario.perfil == 'pcm' %}
+                    <button class="btn" style="width: auto; padding: 10px 16px; background: #f2b705; color: #0a1c2f;" onclick="abrirModalGerenciarEquipamentos()">
+                        <i class="fas fa-cog"></i> Gerenciar
+                    </button>
                     {% endif %}
-                {% else %}
-                <span class="status-tag dourado">Novo checklist disponível</span>
-                {% endif %}
+                </div>
             </div>
 
-            {% if not checklist %}
-            <div class="equipamento-selector">
-                <label style="font-weight:600;">Selecione o equipamento para iniciar o checklist:</label>
-                <select id="equipamentoSelect">
-                    <option value="">-- Escolha um equipamento --</option>
-                    {% for equipamento in equipamentos %}
-                    <option value="{{ equipamento.id }}">{{ equipamento.nome }}</option>
-                    {% endfor %}
-                </select>
-                <button class="btn btn-dourado" style="margin-top:15px;" onclick="iniciarChecklist()">
-                    <i class="fas fa-play"></i> Iniciar Checklist
-                </button>
-            </div>
-            {% endif %}
-
-            {% if checklist %}
-            <div class="card-item">
-                <h3><i class="fas fa-compress" style="color:#f2b705;"></i> {{ checklist.equipamento.nome }}</h3>
-                
-                <div style="margin-top:20px;">
-                    {% for item in checklist.itens %}
-                    <div class="checklist-item">
-                        <input type="checkbox" 
-                               {% if item.concluido %}checked{% endif %} 
-                               onchange="atualizarItem({{ checklist.id }}, {{ item.id }}, this.checked)">
-                        <span style="{% if item.concluido %}text-decoration: line-through; color:#6c757d;{% endif %}">
-                            {{ item.descricao }}
-                        </span>
+            {% if checklists and checklists|length > 0 and not request.args.get('new') %}
+                <!-- Lista de checklists existentes -->
+                <h3>Seus Checklists deste mês:</h3>
+                <div style="margin-bottom: 20px;">
+                    {% for chk in checklists %}
+                    <div class="equipamento-card" style="cursor: pointer; position: relative;">
+                        <div onclick="window.location.href='/modulo/checklist?checklist_id={{ chk.id }}'" style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                            <div class="equipamento-icon">
+                                {% if 'daf' in chk.equipamento.nome|lower %}
+                                <i class="fas fa-truck"></i>
+                                {% else %}
+                                <i class="fas fa-cog"></i>
+                                {% endif %}
+                            </div>
+                            <div class="equipamento-info">
+                                <h4>{{ chk.equipamento.nome }}</h4>
+                                <p>{{ chk.equipamento.modelo }} · {{ chk.equipamento.fabricante }}</p>
+                            </div>
+                            <div class="status-badge {% if chk.status == 'pendente' %}status-pendente{% else %}status-concluido{% endif %}">
+                                {% if chk.status == 'pendente' %}Em andamento{% else %}Concluído{% endif %}
+                            </div>
+                        </div>
+                        {% if usuario.perfil == 'pcm' %}
+                        <div class="equipamento-actions" style="margin-left: 10px;">
+                            <button class="action-btn delete" onclick="event.stopPropagation(); confirmarExcluirChecklist({{ chk.id }}, '{{ chk.equipamento.nome }}')" title="Excluir checklist">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
-
-                <div class="obs-box">
-                    <label style="font-weight:600;">Observações:</label>
-                    <textarea rows="3" id="observacoes" placeholder="Registre observações importantes...">{{ checklist.observacoes or '' }}</textarea>
-                </div>
-
-                <button class="btn btn-dourado" onclick="finalizarChecklist({{ checklist.id }})">
-                    <i class="fas fa-envelope"></i> Concluir & Enviar Relatório
-                </button>
-            </div>
             {% endif %}
 
-            {% if usuario.perfil == 'pcm' and checklist and checklist.status == 'concluido' %}
-            <button class="btn btn-outline" style="margin-top:15px;" onclick="visualizarRelatorio({{ checklist.id }})">
-                <i class="fas fa-file-pdf"></i> Visualizar Relatório
-            </button>
+            {% if request.args.get('new') or not checklists or checklists|length == 0 %}
+                <!-- Tela de seleção de equipamento para novo checklist -->
+                <h3>Selecione o equipamento para iniciar o checklist:</h3>
+                
+                {% if equipamentos %}
+                    <div style="margin-top: 15px;">
+                        {% for equipamento in equipamentos %}
+                        <div class="equipamento-card">
+                            <div class="equipamento-icon" onclick="iniciarChecklist({{ equipamento.id }})" style="cursor: pointer;">
+                                {% if 'daf' in equipamento.nome|lower %}
+                                <i class="fas fa-truck"></i>
+                                {% elif 'prensa' in equipamento.nome|lower %}
+                                <i class="fas fa-cog"></i>
+                                {% elif 'robô' in equipamento.nome|lower or 'robot' in equipamento.nome|lower %}
+                                <i class="fas fa-robot"></i>
+                                {% elif 'compressor' in equipamento.nome|lower %}
+                                <i class="fas fa-compress"></i>
+                                {% elif 'torno' in equipamento.nome|lower %}
+                                <i class="fas fa-cut"></i>
+                                {% else %}
+                                <i class="fas fa-industry"></i>
+                                {% endif %}
+                            </div>
+                            <div class="equipamento-info" onclick="iniciarChecklist({{ equipamento.id }})" style="cursor: pointer;">
+                                <h4>{{ equipamento.nome }}</h4>
+                                <p>{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                                {% if equipamento.id == 6 %} {# ID do DAF #}
+                                <p style="color: #f2b705; font-size: 0.8rem;">
+                                    <i class="fas fa-star"></i> Checklist completo com 106 itens
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% if usuario.perfil == 'pcm' %}
+                            <div class="equipamento-actions">
+                                <button class="action-btn edit" onclick="event.stopPropagation(); editarEquipamento({{ equipamento.id }})" title="Editar equipamento">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" onclick="event.stopPropagation(); confirmarExcluirEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Excluir equipamento">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="sem-checklist">
+                        <i class="fas fa-tools"></i>
+                        <h3>Nenhum equipamento cadastrado</h3>
+                        <p>Entre em contato com o PCM para cadastrar equipamentos.</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if checklist %}
+                <!-- Checklist em andamento -->
+                <div style="margin-top: 30px;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>{{ checklist.equipamento.nome }}</h3>
+                        {% if checklist.status == 'pendente' %}
+                        <span class="status-tag dourado">Em andamento</span>
+                        {% else %}
+                        <span class="status-tag" style="background:#28a745; color:white;">Concluído</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e0e5ec; border-radius: 4px; padding: 10px;">
+                        {% for item in checklist.itens %}
+                        <div class="checklist-item">
+                            <input type="checkbox" 
+                                   {% if item.concluido %}checked{% endif %} 
+                                   {% if checklist.status == 'concluido' %}disabled{% endif %}
+                                   onchange="atualizarItem({{ checklist.id }}, {{ item.id }}, this.checked)">
+                            <span style="{% if item.concluido %}text-decoration: line-through; color:#6c757d;{% endif %}">
+                                {{ item.descricao }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="obs-box">
+                        <label style="font-weight:600;">Observações:</label>
+                        <textarea rows="3" id="observacoes" placeholder="Registre observações importantes..." 
+                                  {% if checklist.status == 'concluido' %}readonly{% endif %}>{{ checklist.observacoes or '' }}</textarea>
+                    </div>
+
+                    {% if checklist.status == 'pendente' %}
+                    <button class="btn btn-dourado" onclick="finalizarChecklist({{ checklist.id }})">
+                        <i class="fas fa-envelope"></i> Concluir & Enviar Relatório
+                    </button>
+                    {% else %}
+                    <div style="text-align: center; padding: 20px; background: #f5f7fa; border-radius: 4px; margin-top: 20px;">
+                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p style="color: #28a745; font-weight: 600;">
+                            Checklist concluído em {{ checklist.data_execucao.strftime('%d/%m/%Y %H:%M') if checklist.data_execucao else '' }}
+                        </p>
+                        <button class="btn btn-outline" style="margin-top:10px;" onclick="visualizarRelatorio({{ checklist.id }})">
+                            <i class="fas fa-file-pdf"></i> Visualizar Relatório
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Modal de confirmação -->
+<!-- Modal de Gerenciamento de Equipamentos -->
+<div class="modal" id="modalGerenciarEquipamentos">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-cog"></i> Gerenciar Equipamentos</h3>
+            <button class="close-btn" onclick="fecharModalGerenciarEquipamentos()">&times;</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-dourado" style="width: auto;" onclick="abrirModalCadastroEquipamento()">
+                <i class="fas fa-plus"></i> Novo Equipamento
+            </button>
+        </div>
+        
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for equipamento in equipamentos %}
+            <div class="equipamento-card" style="margin-bottom: 10px;">
+                <div class="equipamento-icon">
+                    {% if 'daf' in equipamento.nome|lower %}
+                    <i class="fas fa-truck"></i>
+                    {% else %}
+                    <i class="fas fa-cog"></i>
+                    {% endif %}
+                </div>
+                <div class="equipamento-info">
+                    <h4>{{ equipamento.nome }}</h4>
+                    <p>{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                </div>
+                <div class="equipamento-actions">
+                    <button class="action-btn edit" onclick="editarEquipamento({{ equipamento.id }})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn" onclick="gerenciarItensPadrao({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Gerenciar itens do checklist">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button class="action-btn delete" onclick="confirmarExcluirEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro/Edição de Equipamento -->
+<div class="modal" id="modalEquipamento">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalEquipamentoTitulo">Cadastrar Equipamento</h3>
+            <button class="close-btn" onclick="fecharModalEquipamento()">&times;</button>
+        </div>
+        <form id="formEquipamento" onsubmit="salvarEquipamento(event)">
+            <input type="hidden" id="equipamentoId">
+            <div class="form-group">
+                <label>Nome do Equipamento *</label>
+                <input type="text" id="equipamentoNome" required>
+            </div>
+            <div class="form-group">
+                <label>Modelo</label>
+                <input type="text" id="equipamentoModelo">
+            </div>
+            <div class="form-group">
+                <label>Fabricante</label>
+                <input type="text" id="equipamentoFabricante">
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="equipamentoTipo">
+                    <option value="Hidráulico">Hidráulico</option>
+                    <option value="Pneumático">Pneumático</option>
+                    <option value="Elétrico">Elétrico</option>
+                    <option value="Mecânico">Mecânico</option>
+                    <option value="Robótica">Robótica</option>
+                    <option value="Usinagem">Usinagem</option>
+                    <option value="Veículo Pesado">Veículo Pesado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Link do Manual (PDF)</label>
+                <input type="url" id="equipamentoManual" placeholder="https://...">
+            </div>
+            <button type="submit" class="btn btn-dourado">Salvar Equipamento</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Itens Padrão -->
+<div class="modal" id="modalItensPadrao">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 id="modalItensTitulo">Itens do Checklist</h3>
+            <button class="close-btn" onclick="fecharModalItensPadrao()">&times;</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-dourado" style="width: auto;" onclick="abrirModalItemPadrao()">
+                <i class="fas fa-plus"></i> Novo Item
+            </button>
+        </div>
+        
+        <div id="itensPadraoList" style="max-height: 400px; overflow-y: auto;">
+            <!-- Itens serão carregados via JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro/Edição de Item Padrão -->
+<div class="modal" id="modalItemPadrao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalItemTitulo">Novo Item</h3>
+            <button class="close-btn" onclick="fecharModalItemPadrao()">&times;</button>
+        </div>
+        <form id="formItemPadrao" onsubmit="salvarItemPadrao(event)">
+            <input type="hidden" id="itemPadraoId">
+            <input type="hidden" id="itemPadraoEquipamentoId">
+            <div class="form-group">
+                <label>Sistema</label>
+                <input type="text" id="itemPadraoSistema" placeholder="Ex: Motor Diesel, Cabine, Freio...">
+            </div>
+            <div class="form-group">
+                <label>Descrição *</label>
+                <textarea id="itemPadraoDescricao" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ordem</label>
+                <input type="number" id="itemPadraoOrdem" value="0" min="0">
+            </div>
+            <button type="submit" class="btn btn-dourado">Salvar Item</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
 <div class="modal" id="modalConfirmacao">
     <div class="modal-content">
         <div class="modal-header">
@@ -114,6 +479,392 @@
         </div>
     </div>
 </div>
+
+<script>
+let equipamentoAtualId = null;
+
+function abrirModalGerenciarEquipamentos() {
+    document.getElementById('modalGerenciarEquipamentos').classList.add('active');
+}
+
+function fecharModalGerenciarEquipamentos() {
+    document.getElementById('modalGerenciarEquipamentos').classList.remove('active');
+}
+
+function abrirModalCadastroEquipamento() {
+    document.getElementById('modalEquipamentoTitulo').textContent = 'Cadastrar Equipamento';
+    document.getElementById('equipamentoId').value = '';
+    document.getElementById('formEquipamento').reset();
+    document.getElementById('modalEquipamento').classList.add('active');
+    fecharModalGerenciarEquipamentos();
+}
+
+function fecharModalEquipamento() {
+    document.getElementById('modalEquipamento').classList.remove('active');
+}
+
+async function editarEquipamento(id) {
+    try {
+        const response = await fetch(`/api/equipamentos`);
+        const equipamentos = await response.json();
+        const equipamento = equipamentos.find(e => e.id === id);
+        
+        if (equipamento) {
+            document.getElementById('modalEquipamentoTitulo').textContent = 'Editar Equipamento';
+            document.getElementById('equipamentoId').value = equipamento.id;
+            document.getElementById('equipamentoNome').value = equipamento.nome;
+            document.getElementById('equipamentoModelo').value = equipamento.modelo || '';
+            document.getElementById('equipamentoFabricante').value = equipamento.fabricante || '';
+            
+            // Buscar mais detalhes do equipamento
+            const tipoSelect = document.getElementById('equipamentoTipo');
+            for (let i = 0; i < tipoSelect.options.length; i++) {
+                if (tipoSelect.options[i].value === equipamento.tipo) {
+                    tipoSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            document.getElementById('equipamentoManual').value = equipamento.manual_pdf || '';
+            document.getElementById('modalEquipamento').classList.add('active');
+            fecharModalGerenciarEquipamentos();
+        }
+    } catch (error) {
+        alert('Erro ao carregar dados do equipamento');
+    }
+}
+
+async function salvarEquipamento(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('equipamentoId').value;
+    const equipamento = {
+        nome: document.getElementById('equipamentoNome').value,
+        modelo: document.getElementById('equipamentoModelo').value,
+        fabricante: document.getElementById('equipamentoFabricante').value,
+        tipo: document.getElementById('equipamentoTipo').value,
+        manual_pdf: document.getElementById('equipamentoManual').value
+    };
+
+    showLoading();
+
+    try {
+        let response;
+        if (id) {
+            // Atualizar
+            response = await fetch(`/api/equipamentos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(equipamento)
+            });
+        } else {
+            // Criar
+            response = await fetch('/api/equipamentos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(equipamento)
+            });
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(id ? 'Equipamento atualizado!' : 'Equipamento cadastrado!');
+            window.location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+            hideLoading();
+        }
+    } catch (error) {
+        alert('Erro de conexão');
+        hideLoading();
+    }
+}
+
+function confirmarExcluirEquipamento(id, nome) {
+    mostrarConfirmacao(
+        'Excluir Equipamento',
+        `Tem certeza que deseja excluir "${nome}"? Esta ação não pode ser desfeita e todos os checklists e chamados relacionados serão perdidos.`,
+        async () => {
+            showLoading();
+            try {
+                const response = await fetch(`/api/equipamentos/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Equipamento excluído!');
+                    window.location.reload();
+                } else {
+                    alert('Erro ao excluir');
+                    hideLoading();
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+                hideLoading();
+            }
+        }
+    );
+}
+
+async function gerenciarItensPadrao(equipamentoId, equipamentoNome) {
+    equipamentoAtualId = equipamentoId;
+    document.getElementById('modalItensTitulo').textContent = `Itens - ${equipamentoNome}`;
+    document.getElementById('itemPadraoEquipamentoId').value = equipamentoId;
+    
+    await carregarItensPadrao(equipamentoId);
+    document.getElementById('modalItensPadrao').classList.add('active');
+    fecharModalGerenciarEquipamentos();
+}
+
+async function carregarItensPadrao(equipamentoId) {
+    try {
+        const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`);
+        const itens = await response.json();
+        
+        const container = document.getElementById('itensPadraoList');
+        
+        if (itens.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Nenhum item cadastrado</p>';
+            return;
+        }
+        
+        let html = '';
+        itens.sort((a, b) => a.ordem - b.ordem).forEach(item => {
+            html += `
+                <div class="item-padrao">
+                    <div class="item-padrao-info">
+                        <div class="item-padrao-sistema">${item.sistema || 'Geral'}</div>
+                        <div class="item-padrao-descricao">${item.descricao}</div>
+                        <div class="item-padrao-ordem">Ordem: ${item.ordem}</div>
+                    </div>
+                    <div class="equipamento-actions">
+                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema || ''}', '${item.descricao}', ${item.ordem})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="confirmarExcluirItemPadrao(${item.id})" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar itens:', error);
+    }
+}
+
+function fecharModalItensPadrao() {
+    document.getElementById('modalItensPadrao').classList.remove('active');
+    equipamentoAtualId = null;
+}
+
+function abrirModalItemPadrao() {
+    document.getElementById('modalItemTitulo').textContent = 'Novo Item';
+    document.getElementById('itemPadraoId').value = '';
+    document.getElementById('formItemPadrao').reset();
+    document.getElementById('modalItemPadrao').classList.add('active');
+}
+
+function fecharModalItemPadrao() {
+    document.getElementById('modalItemPadrao').classList.remove('active');
+}
+
+function editarItemPadrao(id, sistema, descricao, ordem) {
+    document.getElementById('modalItemTitulo').textContent = 'Editar Item';
+    document.getElementById('itemPadraoId').value = id;
+    document.getElementById('itemPadraoSistema').value = sistema;
+    document.getElementById('itemPadraoDescricao').value = descricao;
+    document.getElementById('itemPadraoOrdem').value = ordem;
+    document.getElementById('modalItemPadrao').classList.add('active');
+}
+
+async function salvarItemPadrao(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('itemPadraoId').value;
+    const equipamentoId = equipamentoAtualId;
+    const item = {
+        sistema: document.getElementById('itemPadraoSistema').value || 'Geral',
+        descricao: document.getElementById('itemPadraoDescricao').value,
+        ordem: parseInt(document.getElementById('itemPadraoOrdem').value) || 0
+    };
+
+    showLoading();
+
+    try {
+        let response;
+        if (id) {
+            // Atualizar - precisa implementar rota PUT para itens
+            alert('Edição de item será implementada em breve');
+            hideLoading();
+            return;
+        } else {
+            response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            });
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            fecharModalItemPadrao();
+            await carregarItensPadrao(equipamentoId);
+            hideLoading();
+        } else {
+            alert('Erro: ' + data.message);
+            hideLoading();
+        }
+    } catch (error) {
+        alert('Erro de conexão');
+        hideLoading();
+    }
+}
+
+function confirmarExcluirItemPadrao(id) {
+    mostrarConfirmacao(
+        'Excluir Item',
+        'Tem certeza que deseja excluir este item do checklist?',
+        async () => {
+            showLoading();
+            try {
+                const response = await fetch(`/api/equipamentos/itens-padrao/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    await carregarItensPadrao(equipamentoAtualId);
+                    hideLoading();
+                } else {
+                    alert('Erro ao excluir');
+                    hideLoading();
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+                hideLoading();
+            }
+        }
+    );
+}
+
+function iniciarChecklist(equipamentoId) {
+    if (!equipamentoId) {
+        alert('Selecione um equipamento');
+        return;
+    }
+
+    showLoading();
+
+    fetch('/api/checklist/iniciar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ equipamento_id: equipamentoId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/modulo/checklist?checklist_id=' + data.checklist_id;
+        } else {
+            alert('Erro: ' + data.message);
+            hideLoading();
+        }
+    })
+    .catch(error => {
+        alert('Erro de conexão');
+        hideLoading();
+    });
+}
+
+function visualizarRelatorio(checklistId) {
+    alert('Relatório do checklist #' + checklistId + '\nEm produção, isso abriria o PDF do relatório.');
+}
+
+function mudarChecklist() {
+    const selector = document.getElementById('checklistSelector');
+    if (selector) {
+        const checklistId = selector.value;
+        if (checklistId) {
+            window.location.href = '/modulo/checklist?checklist_id=' + checklistId;
+        }
+    }
+}
+
+function confirmarExcluirChecklist(id, equipamentoNome) {
+    mostrarConfirmacao(
+        'Excluir Checklist',
+        `Tem certeza que deseja excluir o checklist do equipamento "${equipamentoNome}"? Esta ação não pode ser desfeita.`,
+        async () => {
+            showLoading();
+            try {
+                const response = await fetch(`/api/checklist/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Checklist excluído com sucesso!');
+                    window.location.reload();
+                } else {
+                    alert('Erro ao excluir: ' + data.message);
+                    hideLoading();
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+                hideLoading();
+            }
+        }
+    );
+}
+
+function showLoading() {
+    document.getElementById('loading').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.remove('active');
+}
+
+function fecharModalConfirmacao() {
+    document.getElementById('modalConfirmacao').classList.remove('active');
+}
+
+function mostrarConfirmacao(titulo, mensagem, callback) {
+    const modal = document.getElementById('modalConfirmacao');
+    document.getElementById('modalMensagem').textContent = mensagem;
+    document.querySelector('#modalConfirmacao .modal-header h3').textContent = titulo;
+    
+    const confirmarBtn = document.getElementById('modalConfirmarBtn');
+    confirmarBtn.onclick = function() {
+        fecharModalConfirmacao();
+        callback();
+    };
+    
+    modal.classList.add('active');
+}
+
+// Fechar modais ao clicar fora
+window.onclick = function(event) {
+    const modais = [
+        'modalConfirmacao',
+        'modalGerenciarEquipamentos',
+        'modalEquipamento',
+        'modalItensPadrao',
+        'modalItemPadrao'
+    ];
+    
+    modais.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target == modal) {
+            modal.classList.remove('active');
+        }
+    });
+}
+</script>
 
 <script src="{{ url_for('static', filename='js/modulo_checklist.js') }}"></script>
 </body>

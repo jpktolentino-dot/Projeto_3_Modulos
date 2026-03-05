@@ -9,15 +9,223 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_corretivas.css') }}">
+    <style>
+        .equipamento-card {
+            background: #f9fbfd;
+            border: 1px solid #e0e5ec;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+        }
+        .equipamento-icon {
+            width: 48px;
+            height: 48px;
+            background: #e9eff5;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0a1c2f;
+            font-size: 1.6rem;
+        }
+        .equipamento-info {
+            flex: 1;
+        }
+        .equipamento-info h4 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .equipamento-info p {
+            color: #5a6f84;
+            font-size: 0.9rem;
+        }
+        .equipamento-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5a6f84;
+        }
+        .action-btn:hover {
+            background: #e9eff5;
+        }
+        .action-btn.delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+        .action-btn.edit:hover {
+            background: #f2b705;
+            color: #0a1c2f;
+        }
+        .action-btn.info:hover {
+            background: #17a2b8;
+            color: white;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f7fa;
+            border-radius: 4px;
+            border-left: 4px solid #f2b705;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 4px;
+            padding: 16px 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-left: 4px solid #f2b705;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .toast.success {
+            border-left-color: #28a745;
+        }
+        
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+        
+        .toast.info {
+            border-left-color: #17a2b8;
+        }
+        
+        .toast i {
+            font-size: 1.3rem;
+        }
+        
+        .toast.success i {
+            color: #28a745;
+        }
+        
+        .toast.error i {
+            color: #dc3545;
+        }
+        
+        .toast.info i {
+            color: #17a2b8;
+        }
+        
+        .toast-message {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Modal de Atualização de Status */
+        .status-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .status-option {
+            padding: 15px;
+            border: 2px solid #e0e5ec;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-option:hover {
+            border-color: #f2b705;
+            background: #f9fbfd;
+        }
+        
+        .status-option.selected {
+            border-color: #f2b705;
+            background: #fff9e6;
+        }
+        
+        .status-option i {
+            font-size: 1.3rem;
+        }
+        
+        .status-option.aberto i {
+            color: #dc3545;
+        }
+        
+        .status-option.andamento i {
+            color: #f2b705;
+        }
+        
+        .status-option.concluido i {
+            color: #28a745;
+        }
+        
+        .status-option .status-info {
+            flex: 1;
+        }
+        
+        .status-option .status-info h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        
+        .status-option .status-info p {
+            font-size: 0.85rem;
+            color: #5a6f84;
+        }
+    </style>
 </head>
 <body>
-<!-- Substitua o loading atual por este: -->
 <div class="loading" id="loading">
     <div class="loading-content">
         <i class="fas fa-circle-notch fa-spin"></i>
         <span>Processando...</span>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
 
 <div class="app-container">
     <div class="screen">
@@ -35,6 +243,15 @@
         </div>
 
         <div class="content-padded">
+            {% if usuario.perfil == 'pcm' %}
+            <div class="admin-header">
+                <span><i class="fas fa-cog" style="color: #f2b705;"></i> <strong>Gerenciamento de Equipamentos</strong></span>
+                <button class="btn" style="width: auto; padding: 8px 16px;" onclick="abrirModalGerenciarEquipamentos()">
+                    <i class="fas fa-edit"></i> Gerenciar
+                </button>
+            </div>
+            {% endif %}
+
             <div class="tabs">
                 <div class="tab active" onclick="mudarTab('novo')">Novo Chamado</div>
                 <div class="tab" onclick="mudarTab('meus')">Meus Chamados</div>
@@ -109,6 +326,172 @@
     </div>
 </div>
 
+<!-- Modal de Gerenciamento de Equipamentos -->
+<div class="modal" id="modalGerenciarEquipamentos">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-cog"></i> Gerenciar Equipamentos</h3>
+            <button class="close-btn" onclick="fecharModalGerenciarEquipamentos()">&times;</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-dourado" style="width: auto;" onclick="abrirModalCadastroEquipamento()">
+                <i class="fas fa-plus"></i> Novo Equipamento
+            </button>
+        </div>
+        
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for equipamento in equipamentos %}
+            <div class="equipamento-card">
+                <div class="equipamento-icon">
+                    {% if 'daf' in equipamento.nome|lower %}
+                    <i class="fas fa-truck"></i>
+                    {% else %}
+                    <i class="fas fa-cog"></i>
+                    {% endif %}
+                </div>
+                <div class="equipamento-info">
+                    <h4>{{ equipamento.nome }}</h4>
+                    <p>{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                </div>
+                <div class="equipamento-actions">
+                    <button class="action-btn info" onclick="verHistoricoEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Ver histórico">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button class="action-btn edit" onclick="editarEquipamento({{ equipamento.id }})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete" onclick="confirmarExcluirEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro/Edição de Equipamento -->
+<div class="modal" id="modalEquipamento">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalEquipamentoTitulo">Cadastrar Equipamento</h3>
+            <button class="close-btn" onclick="fecharModalEquipamento()">&times;</button>
+        </div>
+        <form id="formEquipamento" onsubmit="salvarEquipamento(event)">
+            <input type="hidden" id="equipamentoId">
+            <div class="form-group">
+                <label>Nome do Equipamento *</label>
+                <input type="text" id="equipamentoNome" required>
+            </div>
+            <div class="form-group">
+                <label>Modelo</label>
+                <input type="text" id="equipamentoModelo">
+            </div>
+            <div class="form-group">
+                <label>Fabricante</label>
+                <input type="text" id="equipamentoFabricante">
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="equipamentoTipo">
+                    <option value="Hidráulico">Hidráulico</option>
+                    <option value="Pneumático">Pneumático</option>
+                    <option value="Elétrico">Elétrico</option>
+                    <option value="Mecânico">Mecânico</option>
+                    <option value="Robótica">Robótica</option>
+                    <option value="Usinagem">Usinagem</option>
+                    <option value="Veículo Pesado">Veículo Pesado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Link do Manual (PDF)</label>
+                <input type="url" id="equipamentoManual" placeholder="https://...">
+            </div>
+            <button type="submit" class="btn btn-dourado">Salvar Equipamento</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Histórico do Equipamento -->
+<div class="modal" id="modalHistorico">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3 id="modalHistoricoTitulo">Histórico do Equipamento</h3>
+            <button class="close-btn" onclick="fecharModalHistorico()">&times;</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn" style="width: auto; padding: 8px 16px; background: #f2b705; color: #0a1c2f;" onclick="carregarHistoricoChecklists()">Checklists</button>
+                <button class="btn" style="width: auto; padding: 8px 16px;" onclick="carregarHistoricoChamados()">Chamados</button>
+            </div>
+            
+            <div id="historicoContent" style="max-height: 400px; overflow-y: auto;">
+                <!-- Conteúdo será carregado via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Atualização de Status -->
+<div class="modal" id="modalAtualizarStatus">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>Atualizar Status do Chamado</h3>
+            <button class="close-btn" onclick="fecharModalAtualizarStatus()">&times;</button>
+        </div>
+        
+        <p style="margin-bottom: 15px; color: #5a6f84;">Selecione o novo status para o chamado #<span id="chamadoNumeroStatus"></span></p>
+        
+        <div class="status-options">
+            <div class="status-option aberto" onclick="selecionarStatus('aberto')" id="statusAberto">
+                <i class="fas fa-exclamation-circle"></i>
+                <div class="status-info">
+                    <h4>Aberto</h4>
+                    <p>Chamado recém-criado, aguardando início</p>
+                </div>
+            </div>
+            
+            <div class="status-option andamento" onclick="selecionarStatus('em_andamento')" id="statusAndamento">
+                <i class="fas fa-spinner"></i>
+                <div class="status-info">
+                    <h4>Em Andamento</h4>
+                    <p>Manutenção em progresso</p>
+                </div>
+            </div>
+            
+            <div class="status-option concluido" onclick="selecionarStatus('concluido')" id="statusConcluido">
+                <i class="fas fa-check-circle"></i>
+                <div class="status-info">
+                    <h4>Concluído</h4>
+                    <p>Serviço finalizado</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalAtualizarStatus()">Cancelar</button>
+            <button class="btn btn-dourado" style="flex:1;" onclick="confirmarAtualizarStatus()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal" id="modalConfirmacao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Ação</h3>
+            <button class="close-btn" onclick="fecharModalConfirmacao()">&times;</button>
+        </div>
+        <p id="modalMensagem"></p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button class="btn btn-dourado" style="flex:1;" id="modalConfirmarBtn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal de Detalhes do Chamado -->
 <div class="modal" id="modalChamado">
     <div class="modal-content">
@@ -120,11 +503,514 @@
         <div style="margin-top:20px; display:flex; gap:10px;">
             <button class="btn btn-outline" style="flex:1;" onclick="fecharModalChamado()">Fechar</button>
             {% if usuario.perfil == 'pcm' %}
-            <button class="btn btn-dourado" style="flex:1;" id="btnAtualizarStatus" onclick="atualizarStatusChamado()">Atualizar Status</button>
+            <button class="btn btn-dourado" style="flex:1;" id="btnAtualizarStatus" onclick="abrirModalAtualizarStatus()">Atualizar Status</button>
             {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+let equipamentoHistoricoId = null;
+let chamadoAtualId = null;
+let novoStatusSelecionado = null;
+
+// Funções de Toast
+function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${tipo}`;
+    
+    let icone = 'fa-info-circle';
+    if (tipo === 'success') icone = 'fa-check-circle';
+    
+    toast.innerHTML = `
+        <i class="fas ${icone}"></i>
+        <div class="toast-message">${mensagem}</div>
+    `;
+    
+    toast.onclick = () => toast.remove();
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, duracao);
+}
+
+function abrirModalGerenciarEquipamentos() {
+    document.getElementById('modalGerenciarEquipamentos').classList.add('active');
+}
+
+function fecharModalGerenciarEquipamentos() {
+    document.getElementById('modalGerenciarEquipamentos').classList.remove('active');
+}
+
+function abrirModalCadastroEquipamento() {
+    document.getElementById('modalEquipamentoTitulo').textContent = 'Cadastrar Equipamento';
+    document.getElementById('equipamentoId').value = '';
+    document.getElementById('formEquipamento').reset();
+    document.getElementById('modalEquipamento').classList.add('active');
+    fecharModalGerenciarEquipamentos();
+}
+
+function fecharModalEquipamento() {
+    document.getElementById('modalEquipamento').classList.remove('active');
+}
+
+async function editarEquipamento(id) {
+    try {
+        const response = await fetch(`/api/equipamentos`);
+        const equipamentos = await response.json();
+        const equipamento = equipamentos.find(e => e.id === id);
+        
+        if (equipamento) {
+            document.getElementById('modalEquipamentoTitulo').textContent = 'Editar Equipamento';
+            document.getElementById('equipamentoId').value = equipamento.id;
+            document.getElementById('equipamentoNome').value = equipamento.nome;
+            document.getElementById('equipamentoModelo').value = equipamento.modelo || '';
+            document.getElementById('equipamentoFabricante').value = equipamento.fabricante || '';
+            
+            const tipoSelect = document.getElementById('equipamentoTipo');
+            for (let i = 0; i < tipoSelect.options.length; i++) {
+                if (tipoSelect.options[i].value === equipamento.tipo) {
+                    tipoSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            document.getElementById('equipamentoManual').value = equipamento.manual_pdf || '';
+            document.getElementById('modalEquipamento').classList.add('active');
+            fecharModalGerenciarEquipamentos();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+}
+
+async function salvarEquipamento(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('equipamentoId').value;
+    const equipamento = {
+        nome: document.getElementById('equipamentoNome').value,
+        modelo: document.getElementById('equipamentoModelo').value,
+        fabricante: document.getElementById('equipamentoFabricante').value,
+        tipo: document.getElementById('equipamentoTipo').value,
+        manual_pdf: document.getElementById('equipamentoManual').value
+    };
+
+    showLoading();
+
+    try {
+        let response;
+        if (id) {
+            response = await fetch(`/api/equipamentos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(equipamento)
+            });
+        } else {
+            response = await fetch('/api/equipamentos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(equipamento)
+            });
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarToast(id ? 'Equipamento atualizado!' : 'Equipamento cadastrado!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+    }
+}
+
+function confirmarExcluirEquipamento(id, nome) {
+    mostrarConfirmacao(
+        'Excluir Equipamento',
+        `Tem certeza que deseja excluir "${nome}"? Esta ação não pode ser desfeita e todos os checklists e chamados relacionados serão perdidos.`,
+        async () => {
+            showLoading();
+            try {
+                const response = await fetch(`/api/equipamentos/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    mostrarToast('Equipamento excluído!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    hideLoading();
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                hideLoading();
+            }
+        }
+    );
+}
+
+function verHistoricoEquipamento(id, nome) {
+    equipamentoHistoricoId = id;
+    document.getElementById('modalHistoricoTitulo').textContent = `Histórico - ${nome}`;
+    document.getElementById('modalHistorico').classList.add('active');
+    fecharModalGerenciarEquipamentos();
+    carregarHistoricoChecklists();
+}
+
+async function carregarHistoricoChecklists() {
+    if (!equipamentoHistoricoId) return;
+    
+    try {
+        const response = await fetch(`/api/equipamentos/${equipamentoHistoricoId}/checklists`);
+        
+        const checklists = await response.json();
+        
+        const container = document.getElementById('historicoContent');
+        
+        if (checklists.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Nenhum checklist encontrado</p>';
+            return;
+        }
+        
+        let html = '<h4 style="margin-bottom:15px;">Checklists Realizados</h4>';
+        checklists.forEach(c => {
+            html += `
+                <div class="chamado-card" style="cursor: default;">
+                    <div class="chamado-header">
+                        <strong>Período: ${c.mes_ano}</strong>
+                        <span class="chamado-status ${c.status === 'concluido' ? 'status-concluido' : 'status-andamento'}">${c.status}</span>
+                    </div>
+                    <p style="color:#5a6f84;">Operador: ${c.operador}</p>
+                    <p style="font-size:0.85rem; color:#7c8b9f;">Execução: ${c.data_execucao}</p>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar checklists:', error);
+    }
+}
+
+async function carregarHistoricoChamados() {
+    if (!equipamentoHistoricoId) return;
+    
+    try {
+        const response = await fetch(`/api/equipamentos/${equipamentoHistoricoId}/chamados`);
+        
+        const chamados = await response.json();
+        
+        const container = document.getElementById('historicoContent');
+        
+        if (chamados.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Nenhum chamado encontrado</p>';
+            return;
+        }
+        
+        let html = '<h4 style="margin-bottom:15px;">Chamados Realizados</h4>';
+        chamados.forEach(c => {
+            let statusClass = '';
+            if (c.status === 'aberto') statusClass = 'status-aberto';
+            else if (c.status === 'em_andamento') statusClass = 'status-andamento';
+            else if (c.status === 'concluido') statusClass = 'status-concluido';
+            
+            html += `
+                <div class="chamado-card" style="cursor: default;">
+                    <div class="chamado-header">
+                        <strong>#${c.id} - ${c.causa}</strong>
+                        <span class="chamado-status ${statusClass}">${c.status}</span>
+                    </div>
+                    <p style="color:#5a6f84;">${c.descricao.substring(0, 100)}${c.descricao.length > 100 ? '...' : ''}</p>
+                    <p style="font-size:0.85rem; color:#7c8b9f;">Aberto em: ${c.data_abertura}</p>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar chamados:', error);
+    }
+}
+
+function fecharModalHistorico() {
+    document.getElementById('modalHistorico').classList.remove('active');
+    equipamentoHistoricoId = null;
+}
+
+function mudarTab(tabName) {
+    // Atualizar tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Atualizar conteúdo
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('tab-' + tabName).classList.add('active');
+
+    if (tabName === 'meus') {
+        carregarChamados('meus');
+    } else if (tabName === 'todos') {
+        carregarChamados('todos');
+    }
+}
+
+async function abrirChamado() {
+    const equipamentoId = document.getElementById('chamadoEquipamento').value;
+    const causa = document.getElementById('chamadoCausa').value;
+    const descricao = document.getElementById('chamadoDescricao').value;
+    const dataInicial = document.getElementById('chamadoDataInicial').value;
+    const dataFinal = document.getElementById('chamadoDataFinal').value;
+
+    if (!equipamentoId || !causa || !descricao || !dataInicial) {
+        return;
+    }
+
+    showLoading();
+
+    try {
+        const response = await fetch('/api/chamados', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                equipamento_id: equipamentoId,
+                causa: causa,
+                descricao: descricao,
+                data_hora_inicial: dataInicial,
+                data_hora_final: dataFinal || new Date().toISOString().slice(0,16)
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarToast('Chamado aberto com sucesso!', 'success');
+            document.getElementById('chamadoCausa').value = '';
+            document.getElementById('chamadoDescricao').value = '';
+            document.getElementById('chamadoEquipamento').value = '';
+            document.getElementById('chamadoDataInicial').value = '';
+            document.getElementById('chamadoDataFinal').value = '';
+            mudarTab('meus');
+            carregarChamados('meus');
+            hideLoading();
+        } else {
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+    }
+}
+
+async function carregarChamados(tipo) {
+    const listaId = tipo === 'meus' ? 'meusChamadosList' : 'todosChamadosList';
+    const container = document.getElementById(listaId);
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/chamados');
+        
+        const chamados = await response.json();
+        
+        if (chamados.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Nenhum chamado encontrado</p>';
+            hideLoading();
+            return;
+        }
+        
+        let html = '';
+        chamados.forEach(chamado => {
+            let statusClass = '';
+            if (chamado.status === 'aberto') statusClass = 'status-aberto';
+            else if (chamado.status === 'em_andamento') statusClass = 'status-andamento';
+            else if (chamado.status === 'concluido') statusClass = 'status-concluido';
+            
+            html += `
+                <div class="chamado-card" onclick="verChamado(${chamado.id})">
+                    <div class="chamado-header">
+                        <strong>${chamado.equipamento}</strong>
+                        <span class="chamado-status ${statusClass}">${chamado.status}</span>
+                    </div>
+                    <p style="color:#5a6f84;">Causa: ${chamado.causa}</p>
+                    <p style="font-size:0.85rem; color:#7c8b9f;">Aberto em: ${chamado.data_abertura}</p>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar chamados:', error);
+        container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Erro ao carregar chamados</p>';
+    }
+    
+    hideLoading();
+}
+
+async function verChamado(id) {
+    chamadoAtualId = id;
+    
+    try {
+        const response = await fetch(`/api/chamados/${id}`);
+        
+        const chamado = await response.json();
+        
+        let statusClass = '';
+        if (chamado.status === 'aberto') statusClass = 'status-aberto';
+        else if (chamado.status === 'em_andamento') statusClass = 'status-andamento';
+        else if (chamado.status === 'concluido') statusClass = 'status-concluido';
+        
+        const detalhes = document.getElementById('chamadoDetalhes');
+        detalhes.innerHTML = `
+            <p><strong>Chamado:</strong> #${chamado.id}</p>
+            <p><strong>Equipamento:</strong> ${chamado.equipamento}</p>
+            <p><strong>Causa:</strong> ${chamado.causa}</p>
+            <p><strong>Descrição:</strong> ${chamado.descricao}</p>
+            <p><strong>Data Abertura:</strong> ${chamado.data_abertura}</p>
+            <p><strong>Status:</strong> <span class="chamado-status ${statusClass}">${chamado.status}</span></p>
+        `;
+    } catch (error) {
+        console.error('Erro ao carregar chamado:', error);
+        const detalhes = document.getElementById('chamadoDetalhes');
+        detalhes.innerHTML = '<p style="text-align:center; color:#5a6f84;">Erro ao carregar detalhes</p>';
+    }
+    
+    document.getElementById('modalChamado').classList.add('active');
+}
+
+function fecharModalChamado() {
+    document.getElementById('modalChamado').classList.remove('active');
+}
+
+function abrirModalAtualizarStatus() {
+    if (!chamadoAtualId) return;
+    
+    document.getElementById('chamadoNumeroStatus').textContent = chamadoAtualId;
+    document.getElementById('modalAtualizarStatus').classList.add('active');
+    document.getElementById('modalChamado').classList.remove('active');
+}
+
+function fecharModalAtualizarStatus() {
+    document.getElementById('modalAtualizarStatus').classList.remove('active');
+    document.querySelectorAll('.status-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    novoStatusSelecionado = null;
+}
+
+function selecionarStatus(status) {
+    document.querySelectorAll('.status-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    
+    if (status === 'aberto') {
+        document.getElementById('statusAberto').classList.add('selected');
+        novoStatusSelecionado = 'aberto';
+    } else if (status === 'em_andamento') {
+        document.getElementById('statusAndamento').classList.add('selected');
+        novoStatusSelecionado = 'em_andamento';
+    } else if (status === 'concluido') {
+        document.getElementById('statusConcluido').classList.add('selected');
+        novoStatusSelecionado = 'concluido';
+    }
+}
+
+async function confirmarAtualizarStatus() {
+    if (!novoStatusSelecionado) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/api/chamados/${chamadoAtualId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: novoStatusSelecionado })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('Status atualizado com sucesso!', 'success');
+            fecharModalAtualizarStatus();
+            carregarChamados('meus');
+            if ('{{ usuario.perfil }}' === 'pcm') {
+                carregarChamados('todos');
+            }
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+    
+    hideLoading();
+}
+
+function showLoading() {
+    document.getElementById('loading').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.remove('active');
+}
+
+function fecharModalConfirmacao() {
+    document.getElementById('modalConfirmacao').classList.remove('active');
+}
+
+function mostrarConfirmacao(titulo, mensagem, callback) {
+    const modal = document.getElementById('modalConfirmacao');
+    document.getElementById('modalMensagem').textContent = mensagem;
+    document.querySelector('#modalConfirmacao .modal-header h3').textContent = titulo;
+    
+    const confirmarBtn = document.getElementById('modalConfirmarBtn');
+    confirmarBtn.onclick = function() {
+        fecharModalConfirmacao();
+        callback();
+    };
+    
+    modal.classList.add('active');
+}
+
+// Carregar chamados ao iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    carregarChamados('meus');
+});
+
+// Fechar modais ao clicar fora
+window.onclick = function(event) {
+    const modais = [
+        'modalConfirmacao',
+        'modalGerenciarEquipamentos',
+        'modalEquipamento',
+        'modalHistorico',
+        'modalChamado',
+        'modalAtualizarStatus'
+    ];
+    
+    modais.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target == modal) {
+            modal.classList.remove('active');
+        }
+    });
+}
+</script>
 
 <script src="{{ url_for('static', filename='js/modulo_corretivas.js') }}"></script>
 </body>
