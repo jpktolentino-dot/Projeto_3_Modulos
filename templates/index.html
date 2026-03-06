@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
@@ -7,220 +8,677 @@
     <!-- Fonte Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
     <!-- Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- CSS Principal -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Estilos adicionais para mobile */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            /* Largura máxima para tablets em vertical */
+            margin: 0 auto;
+        }
+
+        .screen {
+            background: white;
+            border-radius: 24px;
+            /* Bordas mais arredondadas para mobile */
+            box-shadow: 0 20px 40px rgba(32, 100, 63, 0.15);
+            overflow: hidden;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .header-aguia {
+            background: #20643f;
+            color: white;
+            padding: 15px 20px 10jpx 16px;
+            border-bottom: 4px solid #40b049;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .header-logo img {
+            height: 150px;
+            width: auto;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: #b0c4de;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        /* Grid dos módulos - adaptável para mobile/tablet */
+        .modules-grid {
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: white;
+        }
+
+        .module-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f0f4f9 100%);
+            border: 2px solid #e0e5ec;
+            border-radius: 20px;
+            padding: 32px 24px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            box-shadow: 0 4px 12px rgba(32, 100, 63, 0.08);
+        }
+
+        .module-card:hover {
+            transform: translateY(-2px);
+            border-color: #40b049;
+            box-shadow: 0 12px 24px rgba(64, 176, 73, 0.2);
+        }
+
+        .module-card:active {
+            transform: translateY(0);
+            background: #e8f0e8;
+        }
+
+        .module-icon {
+            width: 72px;
+            height: 72px;
+            background: white;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #20643f;
+            font-size: 2.4rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .module-info {
+            flex: 1;
+        }
+
+        .module-info h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #20643f;
+            margin-bottom: 6px;
+        }
+
+        .module-info p {
+            color: #5a6f84;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .module-arrow {
+            color: #40b049;
+            font-size: 1.4rem;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .module-card:hover .module-arrow {
+            opacity: 1;
+        }
+
+        /* Tela de login - ajustes mobile */
+        .content-padded {
+            padding: 28px 24px;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #20643f;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1e2b3f;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 2px solid #e0e5ec;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #40b049;
+            box-shadow: 0 0 0 4px rgba(64, 176, 73, 0.15);
+        }
+
+        .btn {
+            background: #20643f;
+            border: none;
+            color: white;
+            padding: 18px 28px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 100%;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .btn:hover {
+            background: #2a8051;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #20643f;
+            border: 2px solid #20643f;
+        }
+
+        .btn-outline:hover {
+            background: #f0f9f0;
+        }
+
+        .btn-verde {
+            background: #40b049;
+            color: white;
+            font-weight: 700;
+        }
+
+        .btn-verde:hover {
+            background: #48c253;
+        }
+
+        .module-badge {
+            margin-top: 20px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.95rem;
+            margin: 12px 0;
+            padding: 12px 16px;
+            background: #fff5f5;
+            border-radius: 12px;
+            border-left: 4px solid #dc3545;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .info-box {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            border: 2px solid #e0e5ec;
+        }
+
+        .info-box i {
+            color: #40b049;
+            margin-right: 8px;
+        }
+
+        .info-box p {
+            margin-bottom: 8px;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(32, 100, 63, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: #20643f;
+            padding: 32px 40px;
+            border-radius: 24px;
+            border: 3px solid #40b049;
+            text-align: center;
+        }
+
+        .loading-content i {
+            font-size: 3.5rem;
+            color: #40b049;
+            margin-bottom: 16px;
+        }
+
+        .loading-content span {
+            display: block;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        /* Responsividade para tablets em modo paisagem */
+        @media (min-width: 768px) and (orientation: landscape) {
+            .app-container {
+                max-width: 800px;
+            }
+
+            .modules-grid {
+                padding: 40px;
+                gap: 24px;
+            }
+
+            .module-card {
+                padding: 40px 32px;
+            }
+
+            .module-icon {
+                width: 84px;
+                height: 84px;
+                font-size: 2.8rem;
+            }
+
+            .module-info h2 {
+                font-size: 1.8rem;
+            }
+
+            .module-info p {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Responsividade para celular em modo paisagem */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 8px;
+            }
+
+            .header-aguia {
+                padding: 20px 24px;
+            }
+
+            .header-logo {
+                font-size: 1.4rem;
+            }
+
+            .header-logo img {
+                height: 25px;
+            }
+
+            .modules-grid {
+                padding: 20px 24px;
+                gap: 12px;
+            }
+
+            .module-card {
+                padding: 16px 20px;
+            }
+
+            .module-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 1.8rem;
+            }
+
+            .module-info h2 {
+                font-size: 1.2rem;
+            }
+
+            .module-info p {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
 </head>
+
 <body>
-<!-- Substitua o loading atual por este: -->
-<div class="loading" id="loading">
-    <div class="loading-content">
-        <i class="fas fa-circle-notch fa-spin"></i>
-        <span>Processando...</span>
-    </div>
-</div>
-
-<div class="app-container">
-    <!-- TELA INICIAL -->
-    <div id="tela-inicial" class="screen active">
-        <div class="header-aguia">
-            <div class="header-logo">
-                <i class="fas fa-helmet-safety"></i> ÁGUIA MANUTENÇÃO
-            </div>
-            <div class="header-subtitle">
-                Sistema de Gestão para Manutenção Industrial
-            </div>
-        </div>
-        
-        <div class="contact-bar">
-            <span><i class="fas fa-phone-alt"></i> 42 3220-2666</span>
-            <span><i class="fas fa-phone-alt"></i> 11 3606-5700</span>
-        </div>
-        
-        <div class="modules-grid">
-            <div class="module-card" onclick="showLoginScreen('leitura')">
-                <div class="module-icon">
-                    <i class="fas fa-book-open"></i>
-                </div>
-                <div class="module-info">
-                    <h2>Módulo de Leitura</h2>
-                    <p>Manuais técnicos e documentação</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color:#f2b705; font-size:1.2rem;"></i>
-            </div>
-
-            <div class="module-card" onclick="showLoginScreen('checklist')">
-                <div class="module-icon">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="module-info">
-                    <h2>Checklist Mensal</h2>
-                    <p>Preventiva e inspeções</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color:#f2b705; font-size:1.2rem;"></i>
-            </div>
-
-            <div class="module-card" onclick="showLoginScreen('corretivas')">
-                <div class="module-icon">
-                    <i class="fas fa-tools"></i>
-                </div>
-                <div class="module-info">
-                    <h2>Manutenções Corretivas</h2>
-                    <p>Abertura de chamados</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color:#f2b705; font-size:1.2rem;"></i>
-            </div>
-        </div>
-
-        <div class="footer-aguia">
-            <div style="display:flex; gap:20px; flex-wrap:wrap;">
-                <span><i class="fas fa-map-marker-alt"></i> Ponta Grossa - PR</span>
-                <span><i class="fas fa-map-marker-alt"></i> São Paulo - SP</span>
-            </div>
-            <div class="divider"></div>
-            <div class="address">
-                <span><i class="fas fa-building"></i> Av. Sen. Flávio C Guimarães, 3505</span>
-                <span><i class="fas fa-building"></i> Av. Caxingui, 640 - Vila Pirajussara</span>
-            </div>
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="loading-content">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <span>Processando...</span>
         </div>
     </div>
 
-    <!-- TELA DE LOGIN - MÓDULO LEITURA -->
-    <div id="login-leitura" class="screen">
-        <div class="header-aguia">
-            <div class="back-button" onclick="showScreen('tela-inicial')">
-                <i class="fas fa-arrow-left"></i> Voltar
+    <div class="app-container">
+        <!-- TELA INICIAL -->
+        <div id="tela-inicial" class="screen active">
+            <div class="header-aguia">
+                <div class="header-logo">
+                    <img src="{{ url_for('static', filename='images/logo-aguia-florestal.png') }}" alt="Águia Florestal">
+                </div>
+                <div class="header-subtitle">
+                    Sistema de Manutenção Industrial
+                </div>
             </div>
-            <div class="header-logo" style="font-size:1.3rem;">
-                <i class="fas fa-book-open"></i> Módulo de Leitura
-            </div>
-            <div class="module-badge">
-                <i class="fas fa-user"></i> Manutentores · PCM
+
+            <div class="modules-grid">
+                <div class="module-card" onclick="showLoginScreen('leitura')">
+                    <div class="module-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="module-info">
+                        <h2>Leitura</h2>
+                        <p>Manuais e documentação técnica</p>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
+
+                <div class="module-card" onclick="showLoginScreen('checklist')">
+                    <div class="module-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="module-info">
+                        <h2>Checklist</h2>
+                        <p>Inspeções mensais</p>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
+
+                <div class="module-card" onclick="showLoginScreen('corretivas')">
+                    <div class="module-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="module-info">
+                        <h2>Corretivas</h2>
+                        <p>Abertura de chamados</p>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
             </div>
         </div>
-        
-        <div class="content-padded">
-            <h2 style="margin-bottom:24px;">Acessar Consulta</h2>
-            
-            <div class="form-group">
-                <label><i class="far fa-user" style="margin-right:8px;"></i> Usuário</label>
-                <input type="text" placeholder="Digite seu login" id="login-user-leitura">
-            </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-lock" style="margin-right:8px;"></i> Senha</label>
-                <input type="password" placeholder="Digite sua senha" id="login-pass-leitura">
+
+        <!-- TELA DE LOGIN - MÓDULO LEITURA -->
+        <div id="login-leitura" class="screen">
+            <div class="header-aguia">
+                <div class="back-button" onclick="showScreen('tela-inicial')">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </div>
+                <div class="header-logo" style="font-size:1.5rem;">
+                    <img src="{{ url_for('static', filename='images/logo-aguia-florestal.png') }}" alt="Águia Florestal" style="height: 25px; width: auto; margin-right: 8px;">
+                    Leitura
+                </div>
+                <div class="module-badge">
+                    <i class="fas fa-user"></i> Manutentores · PCM
+                </div>
             </div>
 
-            <div class="error-message" id="login-error-leitura"></div>
+            <div class="content-padded">
+                <h2>Acessar Consulta</h2>
 
-            <div style="display: flex; gap: 12px; margin-top: 32px;">
-                <button class="btn btn-outline" style="flex:1;" onclick="showScreen('tela-inicial')">Cancelar</button>
-                <button class="btn" style="flex:2; background:#f2b705; color:#0a1c2f;" onclick="fazerLogin('leitura')">
-                    Entrar <i class="fas fa-arrow-right"></i>
-                </button>
+                <div class="form-group">
+                    <label><i class="far fa-user" style="margin-right:8px;"></i> Usuário</label>
+                    <input type="text" placeholder="Digite seu login" id="login-user-leitura">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock" style="margin-right:8px;"></i> Senha</label>
+                    <input type="password" placeholder="Digite sua senha" id="login-pass-leitura">
+                </div>
+
+                <div class="error-message" id="login-error-leitura"></div>
+
+                <div style="display: flex; gap: 12px; margin-top: 32px;">
+                    <button class="btn btn-outline" style="flex:1;"
+                        onclick="showScreen('tela-inicial')">Cancelar</button>
+                    <button class="btn btn-verde" style="flex:2;" onclick="fazerLogin('leitura')">
+                        Entrar <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> <strong>Usuários de teste:</strong></p>
+                    <p>📖 maria.leit / 123456 (Leitura apenas)</p>
+                    <p>👑 carlos.pcm / 123456 (Acesso total)</p>
+                </div>
             </div>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f5f7fa; border-radius: 4px; font-size:0.9rem; border:1px solid #e0e5ec;">
-                <p><i class="fas fa-info-circle" style="color:#f2b705;"></i> <strong>Usuários de teste:</strong></p>
-                <p>📖 maria.leit / 123456 (Leitura apenas)</p>
-                <p>👑 carlos.pcm / 123456 (Acesso total)</p>
+        </div>
+
+        <!-- TELA DE LOGIN - CHECKLIST -->
+        <div id="login-checklist" class="screen">
+            <div class="header-aguia">
+                <div class="back-button" onclick="showScreen('tela-inicial')">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </div>
+                <div class="header-logo" style="font-size:1.5rem;">
+                    <img src="{{ url_for('static', filename='images/logo-aguia-florestal.png') }}" alt="Águia Florestal" style="height: 25px; width: auto; margin-right: 8px;">
+                    Checklist
+                </div>
+                <div class="module-badge">
+                    <i class="fas fa-user-hard-hat"></i> Operador · PCM
+                </div>
+            </div>
+
+            <div class="content-padded">
+                <h2>Acessar Checklists</h2>
+
+                <div class="form-group">
+                    <label><i class="far fa-user"></i> Usuário</label>
+                    <input type="text" placeholder="Digite seu login" id="login-user-checklist">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" placeholder="Digite sua senha" id="login-pass-checklist">
+                </div>
+
+                <div class="error-message" id="login-error-checklist"></div>
+
+                <div style="display: flex; gap: 12px; margin-top: 32px;">
+                    <button class="btn btn-outline" style="flex:1;"
+                        onclick="showScreen('tela-inicial')">Cancelar</button>
+                    <button class="btn btn-verde" style="flex:2;" onclick="fazerLogin('checklist')">
+                        Entrar <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> <strong>Usuários de teste:</strong></p>
+                    <p>✅ pedro.check / 123456 (Checklist apenas)</p>
+                    <p>👑 carlos.pcm / 123456 (Acesso total)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA DE LOGIN - CORRETIVAS -->
+        <div id="login-corretivas" class="screen">
+            <div class="header-aguia">
+                <div class="back-button" onclick="showScreen('tela-inicial')">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </div>
+                <div class="header-logo" style="font-size:1.5rem;">
+                    <img src="{{ url_for('static', filename='images/logo-aguia-florestal.png') }}" alt="Águia Florestal" style="height: 25px; width: auto; margin-right: 8px;">
+                    Corretivas
+                </div>
+                <div class="module-badge">
+                    <i class="fas fa-user"></i> Manutentores
+                </div>
+            </div>
+
+            <div class="content-padded">
+                <h2>Abrir Chamado Técnico</h2>
+
+                <div class="form-group">
+                    <label><i class="far fa-user"></i> Usuário</label>
+                    <input type="text" placeholder="Digite seu login" id="login-user-corretivas">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" placeholder="Digite sua senha" id="login-pass-corretivas">
+                </div>
+
+                <div class="error-message" id="login-error-corretivas"></div>
+
+                <div style="display: flex; gap: 12px; margin-top: 32px;">
+                    <button class="btn btn-outline" style="flex:1;"
+                        onclick="showScreen('tela-inicial')">Cancelar</button>
+                    <button class="btn btn-verde" style="flex:2;" onclick="fazerLogin('corretivas')">
+                        Entrar <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> <strong>Usuários de teste:</strong></p>
+                    <p>🔧 joao.manut / 123456 (Acesso total)</p>
+                    <p>👑 carlos.pcm / 123456 (Acesso total)</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- TELA DE LOGIN - CHECKLIST -->
-    <div id="login-checklist" class="screen">
-        <div class="header-aguia">
-            <div class="back-button" onclick="showScreen('tela-inicial')">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </div>
-            <div class="header-logo" style="font-size:1.3rem;">
-                <i class="fas fa-calendar-check"></i> Checklist Mensal
-            </div>
-            <div class="module-badge">
-                <i class="fas fa-user-hard-hat"></i> Operador · PCM
-            </div>
-        </div>
-        
-        <div class="content-padded">
-            <h2 style="margin-bottom:24px;">Acessar Checklists</h2>
-            
-            <div class="form-group">
-                <label><i class="far fa-user"></i> Usuário</label>
-                <input type="text" placeholder="Digite seu login" id="login-user-checklist">
-            </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-lock"></i> Senha</label>
-                <input type="password" placeholder="Digite sua senha" id="login-pass-checklist">
-            </div>
+    <!-- JavaScript Principal -->
+    <script>
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
 
-            <div class="error-message" id="login-error-checklist"></div>
+        function showLoginScreen(modulo) {
+            showScreen('login-' + modulo);
+        }
 
-            <div style="display: flex; gap: 12px; margin-top: 32px;">
-                <button class="btn btn-outline" style="flex:1;" onclick="showScreen('tela-inicial')">Cancelar</button>
-                <button class="btn" style="flex:2; background:#f2b705; color:#0a1c2f;" onclick="fazerLogin('checklist')">
-                    Entrar <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f5f7fa; border-radius: 4px; font-size:0.9rem; border:1px solid #e0e5ec;">
-                <p><i class="fas fa-info-circle" style="color:#f2b705;"></i> <strong>Usuários de teste:</strong></p>
-                <p>✅ pedro.check / 123456 (Checklist apenas)</p>
-                <p>👑 carlos.pcm / 123456 (Acesso total)</p>
-            </div>
-        </div>
-    </div>
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
 
-    <!-- TELA DE LOGIN - CORRETIVAS -->
-    <div id="login-corretivas" class="screen">
-        <div class="header-aguia">
-            <div class="back-button" onclick="showScreen('tela-inicial')">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </div>
-            <div class="header-logo" style="font-size:1.3rem;">
-                <i class="fas fa-tools"></i> Corretivas
-            </div>
-            <div class="module-badge">
-                <i class="fas fa-user"></i> Manutentores
-            </div>
-        </div>
-        
-        <div class="content-padded">
-            <h2 style="margin-bottom:24px;">Abrir Chamado Técnico</h2>
-            
-            <div class="form-group">
-                <label><i class="far fa-user"></i> Usuário</label>
-                <input type="text" placeholder="Digite seu login" id="login-user-corretivas">
-            </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-lock"></i> Senha</label>
-                <input type="password" placeholder="Digite sua senha" id="login-pass-corretivas">
-            </div>
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
 
-            <div class="error-message" id="login-error-corretivas"></div>
+        function showError(modulo, message) {
+            const errorDiv = document.getElementById('login-error-' + modulo);
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('active');
+                setTimeout(() => {
+                    errorDiv.classList.remove('active');
+                }, 3000);
+            }
+        }
 
-            <div style="display: flex; gap: 12px; margin-top: 32px;">
-                <button class="btn btn-outline" style="flex:1;" onclick="showScreen('tela-inicial')">Cancelar</button>
-                <button class="btn" style="flex:2; background:#f2b705; color:#0a1c2f;" onclick="fazerLogin('corretivas')">
-                    Entrar <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-            
-            <div style="margin-top: 20px; padding: 15px; background: #f5f7fa; border-radius: 4px; font-size:0.9rem; border:1px solid #e0e5ec;">
-                <p><i class="fas fa-info-circle" style="color:#f2b705;"></i> <strong>Usuários de teste:</strong></p>
-                <p>🔧 joao.manut / 123456 (Acesso total)</p>
-                <p>👑 carlos.pcm / 123456 (Acesso total)</p>
-            </div>
-        </div>
-    </div>
-</div>
+        async function fazerLogin(modulo) {
+            const login = document.getElementById(`login-user-${modulo}`).value;
+            const senha = document.getElementById(`login-pass-${modulo}`).value;
 
-<!-- JavaScript Principal -->
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+            if (!login || !senha) {
+                showError(modulo, 'Preencha usuário e senha');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`/login/${modulo}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ login, senha })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    hideLoading();
+                    showError(modulo, data.message || 'Erro ao fazer login');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro:', error);
+                showError(modulo, 'Erro de conexão com o servidor');
+            }
+        }
+    </script>
 </body>
+
 </html>

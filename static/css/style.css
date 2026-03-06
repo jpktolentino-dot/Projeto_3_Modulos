@@ -42,10 +42,10 @@ body {
 }
 
 .header-aguia {
-    background: #0a1c2f;
+    background: #20643f;
     color: white;
     padding: 24px 24px 20px 24px;
-    border-bottom: 3px solid #f2b705;
+    border-bottom: 3px solid #40b049;
 }
 
 .header-logo {
@@ -60,7 +60,7 @@ body {
 
 .header-logo i {
     font-size: 2rem;
-    color: #f2b705;
+    color: #40b049;
 }
 
 .header-subtitle {
@@ -70,8 +70,8 @@ body {
 }
 
 .contact-bar {
-    background: #f2b705;
-    color: #0a1c2f;
+    background: #40b049;
+    color: white;
     padding: 10px 24px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -82,7 +82,7 @@ body {
 
 .contact-bar i {
     margin-right: 6px;
-    color: #0a1c2f;
+    color: white;
 }
 
 .modules-grid {
@@ -102,12 +102,12 @@ body {
     display: flex;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 2px 5px rgba(10, 28, 47, 0.05);
+    box-shadow: 0 2px 5px rgba(32, 100, 63, 0.05);
 }
 
 .module-card:hover {
-    border-color: #f2b705;
-    box-shadow: 0 5px 15px rgba(10, 28, 47, 0.1);
+    border-color: #40b049;
+    box-shadow: 0 5px 15px rgba(32, 100, 63, 0.1);
 }
 
 .module-icon {
@@ -118,14 +118,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #0a1c2f;
+    color: #20643f;
     font-size: 2rem;
 }
 
 .module-info h2 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #0a1c2f;
+    color: #20643f;
     margin-bottom: 4px;
 }
 
@@ -150,8 +150,8 @@ body {
 }
 
 .back-button:hover {
-    background: rgba(242, 183, 5, 0.2);
-    color: #f2b705;
+    background: rgba(64, 176, 73, 0.2);
+    color: #40b049;
 }
 
 .content-padded {
@@ -162,7 +162,7 @@ h2 {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #0a1c2f;
+    color: #20643f;
 }
 
 .form-group {
@@ -190,12 +190,12 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: #f2b705;
-    box-shadow: 0 0 0 2px rgba(242, 183, 5, 0.2);
+    border-color: #40b049;
+    box-shadow: 0 0 0 2px rgba(64, 176, 73, 0.2);
 }
 
 .btn {
-    background: #0a1c2f;
+    background: #20643f;
     border: none;
     color: white;
     padding: 16px 24px;
@@ -214,12 +214,13 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn:hover {
-    background: #132b42;
+    background: #2a8051;
 }
 
 .btn-outline {
     background: white;
-    color: #0a1c2f;
+    color: #20643f;
+    border: 1px solid #20643f;
 }
 
 .footer-aguia {
@@ -250,7 +251,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .footer-aguia i {
-    color: #f2b705;
+    color: #40b049;
     width: 18px;
 }
 
@@ -261,7 +262,7 @@ input:focus, select:focus, textarea:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(10, 28, 47, 0.8);
+    background: rgba(32, 100, 63, 0.8);
     z-index: 9999;
     justify-content: center;
     align-items: center;
@@ -275,17 +276,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 .loading-content {
-    background: #0a1c2f;
+    background: #20643f;
     padding: 30px 40px;
     border-radius: 8px;
-    border: 2px solid #f2b705;
+    border: 2px solid #40b049;
     text-align: center;
     min-width: 200px;
 }
 
 .loading-content i {
     font-size: 3rem;
-    color: #f2b705;
+    color: #40b049;
     margin-bottom: 15px;
 }
 
