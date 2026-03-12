@@ -4,6 +4,11 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 from functools import wraps
+from werkzeug.utils import secure_filename
+from groq_service import groq_processor
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'aguia_sistemas_secret_key_2026'
@@ -12,6 +17,16 @@ app.secret_key = 'aguia_sistemas_secret_key_2026'
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'aguia_manutencao.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configurações de upload
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'pdf'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Criar pasta de uploads se não existir
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
 
@@ -88,6 +103,11 @@ class ChamadoCorretivo(db.Model):
     
     equipamento = db.relationship('Equipamento')
     manutentor = db.relationship('Usuario')
+
+# ==================== FUNÇÕES AUXILIARES ====================
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ==================== DECORADORES DE LOGIN ====================
 
@@ -186,6 +206,7 @@ def listar_equipamentos():
         'nome': e.nome,
         'modelo': e.modelo,
         'fabricante': e.fabricante,
+        'tipo': e.tipo,
         'manual_pdf': e.manual_pdf
     } for e in equipamentos])
 
@@ -210,6 +231,26 @@ def cadastrar_equipamento():
     db.session.commit()
     
     return jsonify({'success': True, 'id': equipamento.id})
+
+@app.route('/api/equipamentos/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_equipamento(id):
+    """Atualiza um equipamento existente (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    dados = request.get_json()
+    equipamento = Equipamento.query.get_or_404(id)
+    
+    equipamento.nome = dados.get('nome', equipamento.nome)
+    equipamento.modelo = dados.get('modelo', equipamento.modelo)
+    equipamento.fabricante = dados.get('fabricante', equipamento.fabricante)
+    equipamento.tipo = dados.get('tipo', equipamento.tipo)
+    equipamento.manual_pdf = dados.get('manual_pdf', equipamento.manual_pdf)
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Equipamento atualizado com sucesso'})
 
 @app.route('/api/equipamentos/<int:id>', methods=['DELETE'])
 @login_required
@@ -274,9 +315,6 @@ def iniciar_checklist():
     usuario_id = session['usuario_id']
     mes_ano = datetime.now().strftime('%m/%Y')
     equipamento_id = dados['equipamento_id']
-    
-    # VERIFICAÇÃO REMOVIDA - Agora permite múltiplos checklists por mês
-    # (desde que sejam para equipamentos diferentes)
     
     checklist = Checklist(
         equipamento_id=equipamento_id,
@@ -354,12 +392,7 @@ def finalizar_checklist(id):
     
     db.session.commit()
     
-    # Aqui você implementaria o envio de e-mail
-    # send_email_report(checklist)
-    
     return jsonify({'success': True, 'message': 'Checklist concluído com sucesso!'})
-
-# Adicione esta nova rota após a rota /api/checklist/<int:id>/finalizar
 
 @app.route('/api/checklist/<int:id>', methods=['DELETE'])
 @login_required
@@ -378,6 +411,294 @@ def excluir_checklist(id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Checklist excluído com sucesso'})
+
+# ==================== ROTAS PARA ITENS PADRÃO ====================
+
+@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['GET'])
+@login_required
+def listar_itens_padrao(id):
+    """Lista os itens padrão de um equipamento"""
+    equipamento = Equipamento.query.get_or_404(id)
+    itens = ItemPadraoChecklist.query.filter_by(equipamento_id=id).order_by(ItemPadraoChecklist.ordem).all()
+    
+    return jsonify([{
+        'id': item.id,
+        'sistema': item.sistema,
+        'descricao': item.descricao,
+        'ordem': item.ordem
+    } for item in itens])
+
+@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['POST'])
+@login_required
+def adicionar_item_padrao(id):
+    """Adiciona um item padrão ao equipamento (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    dados = request.get_json()
+    
+    item = ItemPadraoChecklist(
+        equipamento_id=id,
+        sistema=dados.get('sistema', 'Geral'),
+        descricao=dados['descricao'],
+        ordem=dados.get('ordem', 0)
+    )
+    
+    db.session.add(item)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'id': item.id})
+
+@app.route('/api/equipamentos/itens-padrao/<int:id>', methods=['DELETE'])
+@login_required
+def deletar_item_padrao(id):
+    """Deleta um item padrão (apenas PCM)"""
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    item = ItemPadraoChecklist.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+# ==================== ROTAS PARA HISTÓRICO ====================
+
+@app.route('/api/equipamentos/<int:id>/checklists', methods=['GET'])
+@login_required
+def listar_checklists_equipamento(id):
+    """Lista todos os checklists de um equipamento"""
+    checklists = Checklist.query.filter_by(equipamento_id=id).order_by(Checklist.data_execucao.desc()).all()
+    
+    return jsonify([{
+        'id': c.id,
+        'mes_ano': c.mes_ano,
+        'operador': c.operador.nome if c.operador else 'N/A',
+        'status': c.status,
+        'data_execucao': c.data_execucao.strftime('%d/%m/%Y %H:%M') if c.data_execucao else 'Pendente'
+    } for c in checklists])
+
+@app.route('/api/equipamentos/<int:id>/chamados', methods=['GET'])
+@login_required
+def listar_chamados_equipamento(id):
+    """Lista todos os chamados de um equipamento"""
+    chamados = ChamadoCorretivo.query.filter_by(equipamento_id=id).order_by(ChamadoCorretivo.data_abertura.desc()).all()
+    
+    return jsonify([{
+        'id': c.id,
+        'causa': c.causa,
+        'descricao': c.descricao,
+        'status': c.status,
+        'data_abertura': c.data_abertura.strftime('%d/%m/%Y %H:%M')
+    } for c in chamados])
+
+# ==================== ROTAS PARA PROCESSAMENTO DE PDF COM GROQ ====================
+
+@app.route('/api/upload-checklist-pdf', methods=['POST'])
+@login_required
+def upload_checklist_pdf():
+    """Upload de PDF de checklist e processamento com Groq"""
+    
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar se arquivo foi enviado
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'Nenhum arquivo enviado'})
+    
+    file = request.files['file']
+    equipamento_id = request.form.get('equipamento_id')
+    
+    if not equipamento_id:
+        return jsonify({'success': False, 'message': 'ID do equipamento não fornecido'})
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'Nome de arquivo vazio'})
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'message': 'Apenas arquivos PDF são permitidos'})
+    
+    try:
+        # Salvar arquivo temporariamente
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Processar PDF com Groq
+        success = groq_processor.process_checklist_pdf_and_save(
+            filepath, 
+            equipamento_id, 
+            db.session
+        )
+        
+        # Remover arquivo temporário
+        os.remove(filepath)
+        
+        if success:
+            return jsonify({
+                'success': True, 
+                'message': 'PDF processado com sucesso! Itens do checklist importados.'
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': 'Erro ao processar PDF. Verifique o formato do arquivo.'
+            })
+            
+    except Exception as e:
+        # Tentar remover arquivo se existir
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        return jsonify({
+            'success': False, 
+            'message': f'Erro no processamento: {str(e)}'
+        })
+
+@app.route('/api/processar-checklist-texto', methods=['POST'])
+@login_required
+def processar_checklist_texto():
+    """Processa texto de checklist manualmente"""
+    
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    dados = request.get_json()
+    texto = dados.get('texto')
+    equipamento_id = dados.get('equipamento_id')
+    
+    if not texto or not equipamento_id:
+        return jsonify({'success': False, 'message': 'Texto e ID do equipamento são obrigatórios'})
+    
+    try:
+        from groq import Groq
+        import re
+        import json
+        
+        client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+        
+        prompt = f"""Analise o seguinte texto de checklist de manutenção e extraia todos os pontos de inspeção/atividades.
+
+Texto:
+{texto[:15000]}
+
+Extraia APENAS os itens que são pontos de inspeção ou atividades. Retorne APENAS um JSON válido com a seguinte estrutura:
+[
+    {{
+        "ponto_inspecao": "nome do item",
+        "conforme": "NA"
+    }},
+    ...
+]"""
+
+        completion = client.chat.completions.create(
+            model="mixtral-8x7b-32768",
+            messages=[
+                {"role": "system", "content": "Você é um especialista em extrair tabelas de checklist. Retorne apenas JSON válido."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=4000
+        )
+        
+        response_text = completion.choices[0].message.content
+        
+        # Extrair JSON
+        json_match = re.search(r'\[[\s\S]*\]', response_text)
+        if json_match:
+            checklist_items = json.loads(json_match.group())
+            
+            # Limpar itens antigos
+            ItemPadraoChecklist.query.filter_by(equipamento_id=equipamento_id).delete()
+            
+            # Adicionar novos itens
+            for i, item in enumerate(checklist_items):
+                ponto = item.get('ponto_inspecao', '').strip()
+                if ponto:
+                    # Determinar sistema baseado no contexto
+                    sistema = "Geral"
+                    ponto_lower = ponto.lower()
+                    
+                    if any(word in ponto_lower for word in ['motor', 'diesel', 'combustão']):
+                        sistema = "Motor"
+                    elif any(word in ponto_lower for word in ['freio', 'frear']):
+                        sistema = "Freio"
+                    elif any(word in ponto_lower for word in ['hidráulico', 'hidraulico', 'bomba', 'mangueira']):
+                        sistema = "Hidráulico"
+                    elif any(word in ponto_lower for word in ['elétrico', 'eletrico', 'chicote', 'cabo', 'bateria']):
+                        sistema = "Elétrico"
+                    elif any(word in ponto_lower for word in ['cabine', 'banco', 'painel', 'porta']):
+                        sistema = "Cabine"
+                    elif any(word in ponto_lower for word in ['pneu', 'roda', 'calibragem']):
+                        sistema = "Pneus"
+                    elif any(word in ponto_lower for word in ['transmissão', 'transmissao', 'cardan', 'diferencial']):
+                        sistema = "Transmissão"
+                    elif any(word in ponto_lower for word in ['direção', 'direcao', 'articulação', 'articulacao']):
+                        sistema = "Direção"
+                    
+                    novo_item = ItemPadraoChecklist(
+                        equipamento_id=equipamento_id,
+                        sistema=sistema,
+                        descricao=ponto,
+                        ordem=i
+                    )
+                    db.session.add(novo_item)
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'{len(checklist_items)} itens importados com sucesso!',
+                'itens': checklist_items
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Não foi possível extrair itens do texto'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Erro no processamento: {str(e)}'
+        })
+
+@app.route('/api/testar-groq', methods=['GET'])
+@login_required
+def testar_groq():
+    """Rota de teste para verificar se a API do Groq está funcionando"""
+    
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    try:
+        from groq import Groq
+        
+        client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+        
+        # Teste simples
+        completion = client.chat.completions.create(
+            model="mixtral-8x7b-32768",
+            messages=[
+                {"role": "user", "content": "Responda apenas com a palavra 'OK' se você estiver funcionando."}
+            ],
+            temperature=0.1,
+            max_tokens=10
+        )
+        
+        resposta = completion.choices[0].message.content
+        
+        return jsonify({
+            'success': True,
+            'message': 'API Groq está funcionando!',
+            'resposta': resposta
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao testar API Groq: {str(e)}'
+        })
 
 # ==================== MÓDULO CORRETIVAS ====================
 
@@ -398,6 +719,27 @@ def modulo_corretivas():
                          usuario=usuario,
                          equipamentos=equipamentos,
                          chamados=chamados)
+
+@app.route('/api/chamados', methods=['GET'])
+@login_required
+def listar_chamados():
+    """Lista todos os chamados do usuário atual"""
+    usuario_id = session['usuario_id']
+    usuario = Usuario.query.get(usuario_id)
+    
+    if usuario.perfil == 'pcm':
+        chamados = ChamadoCorretivo.query.all()
+    else:
+        chamados = ChamadoCorretivo.query.filter_by(manutentor_id=usuario_id).all()
+    
+    return jsonify([{
+        'id': c.id,
+        'equipamento': c.equipamento.nome if c.equipamento else 'N/A',
+        'causa': c.causa,
+        'descricao': c.descricao,
+        'status': c.status,
+        'data_abertura': c.data_abertura.strftime('%d/%m/%Y %H:%M')
+    } for c in chamados])
 
 @app.route('/api/chamados', methods=['POST'])
 @login_required
@@ -450,28 +792,28 @@ def atualizar_chamado(id):
     
     return jsonify({'success': True})
 
-# ==================== ROTA PARA LISTAR CHAMADOS (GET) ====================
+# ==================== ROTAS PARA TEMPLATES ====================
 
-@app.route('/api/chamados', methods=['GET'])
+@app.route('/modulo/leitura/template')
 @login_required
-def listar_chamados():
-    """Lista todos os chamados do usuário atual"""
-    usuario_id = session['usuario_id']
-    usuario = Usuario.query.get(usuario_id)
-    
-    if usuario.perfil == 'pcm':
-        chamados = ChamadoCorretivo.query.all()
-    else:
-        chamados = ChamadoCorretivo.query.filter_by(manutentor_id=usuario_id).all()
-    
-    return jsonify([{
-        'id': c.id,
-        'equipamento': c.equipamento.nome if c.equipamento else 'N/A',
-        'causa': c.causa,
-        'descricao': c.descricao,
-        'status': c.status,
-        'data_abertura': c.data_abertura.strftime('%d/%m/%Y %H:%M')
-    } for c in chamados])
+def template_leitura():
+    usuario = Usuario.query.get(session['usuario_id'])
+    equipamentos = Equipamento.query.all()
+    return render_template('modulo_leitura.html', usuario=usuario, equipamentos=equipamentos)
+
+@app.route('/modulo/checklist/template')
+@login_required
+def template_checklist():
+    usuario = Usuario.query.get(session['usuario_id'])
+    equipamentos = Equipamento.query.all()
+    return render_template('modulo_checklist.html', usuario=usuario, equipamentos=equipamentos)
+
+@app.route('/modulo/corretivas/template')
+@login_required
+def template_corretivas():
+    usuario = Usuario.query.get(session['usuario_id'])
+    equipamentos = Equipamento.query.all()
+    return render_template('modulo_corretivas.html', usuario=usuario, equipamentos=equipamentos)
 
 # ==================== INICIALIZAÇÃO DO BANCO ====================
 
@@ -661,127 +1003,6 @@ def init_db():
 # Criar tabelas e dados iniciais
 with app.app_context():
     init_db()
-
-# ==================== ROTA PARA RENDERIZAR TEMPLATES ====================
-
-@app.route('/modulo/leitura/template')
-@login_required
-def template_leitura():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_leitura.html', usuario=usuario, equipamentos=equipamentos)
-
-@app.route('/modulo/checklist/template')
-@login_required
-def template_checklist():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_checklist.html', usuario=usuario, equipamentos=equipamentos)
-
-@app.route('/modulo/corretivas/template')
-@login_required
-def template_corretivas():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_corretivas.html', usuario=usuario, equipamentos=equipamentos)
-
-# ==================== ROTAS PARA GERENCIAMENTO DE EQUIPAMENTOS (NOVAS) ====================
-
-@app.route('/api/equipamentos/<int:id>', methods=['PUT'])
-@login_required
-def atualizar_equipamento(id):
-    """Atualiza um equipamento existente (apenas PCM)"""
-    if session.get('usuario_perfil') != 'pcm':
-        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
-    
-    dados = request.get_json()
-    equipamento = Equipamento.query.get_or_404(id)
-    
-    equipamento.nome = dados.get('nome', equipamento.nome)
-    equipamento.modelo = dados.get('modelo', equipamento.modelo)
-    equipamento.fabricante = dados.get('fabricante', equipamento.fabricante)
-    equipamento.tipo = dados.get('tipo', equipamento.tipo)
-    equipamento.manual_pdf = dados.get('manual_pdf', equipamento.manual_pdf)
-    
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Equipamento atualizado com sucesso'})
-
-@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['GET'])
-@login_required
-def listar_itens_padrao(id):
-    """Lista os itens padrão de um equipamento"""
-    equipamento = Equipamento.query.get_or_404(id)
-    itens = ItemPadraoChecklist.query.filter_by(equipamento_id=id).order_by(ItemPadraoChecklist.ordem).all()
-    
-    return jsonify([{
-        'id': item.id,
-        'sistema': item.sistema,
-        'descricao': item.descricao,
-        'ordem': item.ordem
-    } for item in itens])
-
-@app.route('/api/equipamentos/<int:id>/itens-padrao', methods=['POST'])
-@login_required
-def adicionar_item_padrao(id):
-    """Adiciona um item padrão ao equipamento (apenas PCM)"""
-    if session.get('usuario_perfil') != 'pcm':
-        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
-    
-    dados = request.get_json()
-    
-    item = ItemPadraoChecklist(
-        equipamento_id=id,
-        sistema=dados.get('sistema', 'Geral'),
-        descricao=dados['descricao'],
-        ordem=dados.get('ordem', 0)
-    )
-    
-    db.session.add(item)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'id': item.id})
-
-@app.route('/api/equipamentos/itens-padrao/<int:id>', methods=['DELETE'])
-@login_required
-def deletar_item_padrao(id):
-    """Deleta um item padrão (apenas PCM)"""
-    if session.get('usuario_perfil') != 'pcm':
-        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
-    
-    item = ItemPadraoChecklist.query.get_or_404(id)
-    db.session.delete(item)
-    db.session.commit()
-    
-    return jsonify({'success': True})
-
-@app.route('/api/equipamentos/<int:id>/checklists', methods=['GET'])
-@login_required
-def listar_checklists_equipamento(id):
-    """Lista todos os checklists de um equipamento"""
-    checklists = Checklist.query.filter_by(equipamento_id=id).order_by(Checklist.data_execucao.desc()).all()
-    
-    return jsonify([{
-        'id': c.id,
-        'mes_ano': c.mes_ano,
-        'operador': c.operador.nome if c.operador else 'N/A',
-        'status': c.status,
-        'data_execucao': c.data_execucao.strftime('%d/%m/%Y %H:%M') if c.data_execucao else 'Pendente'
-    } for c in checklists])
-
-@app.route('/api/equipamentos/<int:id>/chamados', methods=['GET'])
-@login_required
-def listar_chamados_equipamento(id):
-    """Lista todos os chamados de um equipamento"""
-    chamados = ChamadoCorretivo.query.filter_by(equipamento_id=id).order_by(ChamadoCorretivo.data_abertura.desc()).all()
-    
-    return jsonify([{
-        'id': c.id,
-        'causa': c.causa,
-        'descricao': c.descricao,
-        'status': c.status,
-        'data_abertura': c.data_abertura.strftime('%d/%m/%Y %H:%M')
-    } for c in chamados])
 
 if __name__ == '__main__':
     app.run(debug=True)

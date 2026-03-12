@@ -26,8 +26,8 @@
             cursor: pointer;
         }
         .equipamento-card.clickable:hover {
-            border-color: #f2b705;
-            box-shadow: 0 2px 8px rgba(242, 183, 5, 0.2);
+            border-color: #40b049;
+            box-shadow: 0 2px 8px rgba(64, 176, 73, 0.2);
         }
         .equipamento-icon {
             width: 48px;
@@ -37,7 +37,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #0a1c2f;
+            color: #20643f;
             font-size: 1.6rem;
         }
         .equipamento-info {
@@ -77,8 +77,12 @@
             color: white;
         }
         .action-btn.edit:hover {
-            background: #f2b705;
-            color: #0a1c2f;
+            background: #40b049;
+            color: white;
+        }
+        .action-btn.pdf:hover {
+            background: #dc3545;
+            color: white;
         }
         .status-badge {
             padding: 4px 12px;
@@ -87,8 +91,8 @@
             font-weight: 600;
         }
         .status-pendente {
-            background: #f2b705;
-            color: #0a1c2f;
+            background: #40b049;
+            color: white;
         }
         .status-concluido {
             background: #28a745;
@@ -103,7 +107,7 @@
         }
         .sem-checklist i {
             font-size: 3rem;
-            color: #f2b705;
+            color: #40b049;
             margin-bottom: 15px;
         }
         .admin-header {
@@ -112,16 +116,16 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #f2b705;
+            border-bottom: 2px solid #40b049;
         }
         .admin-title {
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #0a1c2f;
+            color: #20643f;
         }
         .admin-title i {
-            color: #f2b705;
+            color: #40b049;
             font-size: 1.5rem;
         }
         .item-padrao {
@@ -139,7 +143,7 @@
         }
         .item-padrao-sistema {
             font-size: 0.85rem;
-            color: #f2b705;
+            color: #40b049;
             font-weight: 600;
             margin-bottom: 4px;
         }
@@ -149,6 +153,110 @@
         .item-padrao-ordem {
             font-size: 0.8rem;
             color: #5a6f84;
+        }
+        
+        /* Estilos para upload de PDF */
+        .upload-area {
+            border: 2px dashed #40b049;
+            border-radius: 4px;
+            padding: 30px;
+            text-align: center;
+            background: #f9fbfd;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover {
+            background: #e9eff5;
+            border-color: #20643f;
+        }
+        .upload-area i {
+            font-size: 3rem;
+            color: #40b049;
+            margin-bottom: 10px;
+        }
+        .upload-area p {
+            color: #5a6f84;
+            margin-bottom: 5px;
+        }
+        .upload-area small {
+            color: #7c8b9f;
+            font-size: 0.85rem;
+        }
+        .upload-area.dragover {
+            background: #e0f0e0;
+            border-color: #20643f;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e5ec;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #40b049;
+            width: 0%;
+            transition: width 0.3s;
+            animation: progressPulse 1.5s infinite;
+        }
+        @keyframes progressPulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        .preview-item {
+            background: white;
+            border: 1px solid #e0e5ec;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .preview-item i {
+            color: #40b049;
+        }
+        .preview-item .sistema {
+            font-size: 0.8rem;
+            color: #20643f;
+            font-weight: 600;
+            background: #e9eff5;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .info-box {
+            background: #e9eff5;
+            border-left: 4px solid #40b049;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .info-box i {
+            color: #40b049;
+            margin-right: 8px;
+        }
+        
+        .btn-pdf {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-pdf:hover {
+            background: #c82333;
         }
     </style>
 </head>
@@ -166,7 +274,7 @@
             <div class="back-button" onclick="window.location.href='/'">
                 <i class="fas fa-sign-out-alt"></i> Sair
             </div>
-            <div class="header-logo" style="font-size:1.3rem;">
+            <div class="header-logo">
                 <i class="fas fa-calendar-check"></i> Checklist Mensal
             </div>
             <div class="user-info">
@@ -183,7 +291,7 @@
                         <i class="fas fa-plus"></i> Novo Checklist
                     </button>
                     {% if usuario.perfil == 'pcm' %}
-                    <button class="btn" style="width: auto; padding: 10px 16px; background: #f2b705; color: #0a1c2f;" onclick="abrirModalGerenciarEquipamentos()">
+                    <button class="btn" style="width: auto; padding: 10px 16px; background: #40b049;" onclick="abrirModalGerenciarEquipamentos()">
                         <i class="fas fa-cog"></i> Gerenciar
                     </button>
                     {% endif %}
@@ -250,9 +358,9 @@
                             <div class="equipamento-info" onclick="iniciarChecklist({{ equipamento.id }})" style="cursor: pointer;">
                                 <h4>{{ equipamento.nome }}</h4>
                                 <p>{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
-                                {% if equipamento.id == 6 %} {# ID do DAF #}
-                                <p style="color: #f2b705; font-size: 0.8rem;">
-                                    <i class="fas fa-star"></i> Checklist completo com 106 itens
+                                {% if equipamento.itens_padrao|length > 0 %}
+                                <p style="color: #40b049; font-size: 0.8rem;">
+                                    <i class="fas fa-check-circle"></i> {{ equipamento.itens_padrao|length }} itens no checklist
                                 </p>
                                 {% endif %}
                             </div>
@@ -284,7 +392,7 @@
                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3>{{ checklist.equipamento.nome }}</h3>
                         {% if checklist.status == 'pendente' %}
-                        <span class="status-tag dourado">Em andamento</span>
+                        <span class="status-tag" style="background:#40b049; color:white;">Em andamento</span>
                         {% else %}
                         <span class="status-tag" style="background:#28a745; color:white;">Concluído</span>
                         {% endif %}
@@ -311,7 +419,7 @@
                     </div>
 
                     {% if checklist.status == 'pendente' %}
-                    <button class="btn btn-dourado" onclick="finalizarChecklist({{ checklist.id }})">
+                    <button class="btn" style="background:#40b049;" onclick="finalizarChecklist({{ checklist.id }})">
                         <i class="fas fa-envelope"></i> Concluir & Enviar Relatório
                     </button>
                     {% else %}
@@ -339,9 +447,15 @@
             <button class="close-btn" onclick="fecharModalGerenciarEquipamentos()">&times;</button>
         </div>
         
-        <div style="margin-bottom: 20px;">
-            <button class="btn btn-dourado" style="width: auto;" onclick="abrirModalCadastroEquipamento()">
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn" style="width: auto; padding: 8px 16px; background: #40b049;" onclick="abrirModalCadastroEquipamento()">
                 <i class="fas fa-plus"></i> Novo Equipamento
+            </button>
+            <button class="btn" style="width: auto; padding: 8px 16px; background: #dc3545;" onclick="abrirModalUploadPDF()">
+                <i class="fas fa-file-pdf"></i> Importar Checklist de PDF
+            </button>
+            <button class="btn btn-outline" style="width: auto; padding: 8px 16px;" onclick="testarGroqAPI()">
+                <i class="fas fa-robot"></i> Testar API Groq
             </button>
         </div>
         
@@ -358,13 +472,16 @@
                 <div class="equipamento-info">
                     <h4>{{ equipamento.nome }}</h4>
                     <p>{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                    <p style="font-size:0.8rem; color:#40b049;">
+                        <i class="fas fa-list"></i> {{ equipamento.itens_padrao|length }} itens
+                    </p>
                 </div>
                 <div class="equipamento-actions">
+                    <button class="action-btn edit" onclick="gerenciarItensPadrao({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Gerenciar itens do checklist">
+                        <i class="fas fa-list"></i>
+                    </button>
                     <button class="action-btn edit" onclick="editarEquipamento({{ equipamento.id }})" title="Editar">
                         <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn" onclick="gerenciarItensPadrao({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Gerenciar itens do checklist">
-                        <i class="fas fa-list"></i>
                     </button>
                     <button class="action-btn delete" onclick="confirmarExcluirEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Excluir">
                         <i class="fas fa-trash"></i>
@@ -413,7 +530,100 @@
                 <label>Link do Manual (PDF)</label>
                 <input type="url" id="equipamentoManual" placeholder="https://...">
             </div>
-            <button type="submit" class="btn btn-dourado">Salvar Equipamento</button>
+            <button type="submit" class="btn" style="background:#40b049;">Salvar Equipamento</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Upload de PDF com Groq -->
+<div class="modal" id="modalUploadPDF">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-pdf" style="color: #dc3545;"></i> Importar Checklist de PDF</h3>
+            <button class="close-btn" onclick="fecharModalUploadPDF()">&times;</button>
+        </div>
+        
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <strong>Como funciona:</strong> O sistema usará IA para extrair automaticamente todos os itens do checklist do PDF e classificá-los por sistema.
+        </div>
+        
+        <form id="formUploadPDF" onsubmit="uploadChecklistPDF(event)">
+            <div class="form-group">
+                <label>Equipamento *</label>
+                <select id="uploadEquipamentoId" required>
+                    <option value="">-- Selecione --</option>
+                    {% for equipamento in equipamentos %}
+                    <option value="{{ equipamento.id }}">{{ equipamento.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Arquivo PDF *</label>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('pdfFile').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Clique para selecionar ou arraste o arquivo</p>
+                    <small>Arquivos .pdf até 16MB</small>
+                </div>
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;" onchange="handleFileSelect(this)">
+                <div id="fileInfo" style="display: none; margin-top: 10px; padding: 10px; background: #e9eff5; border-radius: 4px;">
+                    <i class="fas fa-file-pdf" style="color: #dc3545;"></i> <span id="fileName"></span>
+                </div>
+            </div>
+            
+            <div id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+                <p style="text-align: center; color: #5a6f84;" id="progressStatus">Processando PDF com IA...</p>
+            </div>
+            
+            <div id="previewArea" style="display: none; margin: 20px 0; max-height: 300px; overflow-y: auto;">
+                <h4>Itens Extraídos <span id="itemCount" class="badge-success"></span></h4>
+                <div id="previewList"></div>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalUploadPDF()">Cancelar</button>
+                <button type="submit" class="btn" style="flex:1; background:#40b049;" id="btnUploadPDF">
+                    <i class="fas fa-upload"></i> Upload e Processar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Processamento de Texto -->
+<div class="modal" id="modalProcessarTexto">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-alt"></i> Processar Texto do Checklist</h3>
+            <button class="close-btn" onclick="fecharModalProcessarTexto()">&times;</button>
+        </div>
+        
+        <form id="formProcessarTexto" onsubmit="processarTextoChecklist(event)">
+            <div class="form-group">
+                <label>Equipamento *</label>
+                <select id="textoEquipamentoId" required>
+                    <option value="">-- Selecione --</option>
+                    {% for equipamento in equipamentos %}
+                    <option value="{{ equipamento.id }}">{{ equipamento.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Texto do Checklist *</label>
+                <textarea id="checklistTexto" rows="8" placeholder="Cole aqui o texto do checklist..." required></textarea>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalProcessarTexto()">Cancelar</button>
+                <button type="submit" class="btn" style="flex:1; background:#40b049;" id="btnProcessarTexto">
+                    <i class="fas fa-magic"></i> Processar
+                </button>
+            </div>
         </form>
     </div>
 </div>
@@ -426,9 +636,12 @@
             <button class="close-btn" onclick="fecharModalItensPadrao()">&times;</button>
         </div>
         
-        <div style="margin-bottom: 20px;">
-            <button class="btn btn-dourado" style="width: auto;" onclick="abrirModalItemPadrao()">
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <button class="btn" style="width: auto; padding: 8px 16px; background: #40b049;" onclick="abrirModalItemPadrao()">
                 <i class="fas fa-plus"></i> Novo Item
+            </button>
+            <button class="btn btn-outline" style="width: auto; padding: 8px 16px;" onclick="abrirModalProcessarTexto()">
+                <i class="fas fa-file-alt"></i> Importar Texto
             </button>
         </div>
         
@@ -450,7 +663,19 @@
             <input type="hidden" id="itemPadraoEquipamentoId">
             <div class="form-group">
                 <label>Sistema</label>
-                <input type="text" id="itemPadraoSistema" placeholder="Ex: Motor Diesel, Cabine, Freio...">
+                <input type="text" id="itemPadraoSistema" placeholder="Ex: Motor Diesel, Cabine, Freio..." list="sistemasSuggest">
+                <datalist id="sistemasSuggest">
+                    <option value="Motor Diesel">
+                    <option value="Cabine">
+                    <option value="Freio">
+                    <option value="Hidráulico">
+                    <option value="Elétrico">
+                    <option value="Transmissão">
+                    <option value="Direção">
+                    <option value="Pneus">
+                    <option value="Chassi">
+                    <option value="Documentação">
+                </datalist>
             </div>
             <div class="form-group">
                 <label>Descrição *</label>
@@ -460,7 +685,7 @@
                 <label>Ordem</label>
                 <input type="number" id="itemPadraoOrdem" value="0" min="0">
             </div>
-            <button type="submit" class="btn btn-dourado">Salvar Item</button>
+            <button type="submit" class="btn" style="background:#40b049;">Salvar Item</button>
         </form>
     </div>
 </div>
@@ -475,13 +700,292 @@
         <p id="modalMensagem"></p>
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
-            <button class="btn btn-dourado" style="flex:1;" id="modalConfirmarBtn">Confirmar</button>
+            <button class="btn" style="flex:1; background:#40b049;" id="modalConfirmarBtn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Preview da Importação -->
+<div class="modal" id="modalPreview">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-eye"></i> Preview da Importação</h3>
+            <button class="close-btn" onclick="fecharModalPreview()">&times;</button>
+        </div>
+        
+        <div id="previewContent" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+            <!-- Conteúdo do preview -->
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalPreview()">Cancelar</button>
+            <button class="btn" style="flex:1; background:#40b049;" onclick="confirmarImportacao()" id="btnConfirmarImportacao">
+                <i class="fas fa-check"></i> Confirmar Importação
+            </button>
         </div>
     </div>
 </div>
 
 <script>
 let equipamentoAtualId = null;
+let itensExtraidos = [];
+let itemParaExcluir = null;
+
+// ==================== FUNÇÕES DE UPLOAD DE PDF ====================
+
+function abrirModalUploadPDF() {
+    document.getElementById('modalUploadPDF').classList.add('active');
+    resetUploadForm();
+}
+
+function fecharModalUploadPDF() {
+    document.getElementById('modalUploadPDF').classList.remove('active');
+    resetUploadForm();
+}
+
+function resetUploadForm() {
+    document.getElementById('formUploadPDF').reset();
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('previewArea').style.display = 'none';
+    document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('btnUploadPDF').disabled = false;
+    document.getElementById('progressFill').style.width = '0%';
+}
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileInfo').style.display = 'block';
+    }
+}
+
+// Drag and drop
+const uploadArea = document.getElementById('uploadArea');
+if (uploadArea) {
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') {
+            document.getElementById('pdfFile').files = e.dataTransfer.files;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileInfo').style.display = 'block';
+        } else {
+            alert('Por favor, arraste apenas arquivos PDF');
+        }
+    });
+}
+
+async function uploadChecklistPDF(event) {
+    event.preventDefault();
+    
+    const equipamentoId = document.getElementById('uploadEquipamentoId').value;
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+    
+    if (!equipamentoId || !file) {
+        alert('Selecione um equipamento e um arquivo PDF');
+        return;
+    }
+    
+    // Mostrar progresso
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('btnUploadPDF').disabled = true;
+    document.getElementById('progressStatus').textContent = 'Enviando arquivo...';
+    document.getElementById('progressFill').style.width = '30%';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('equipamento_id', equipamentoId);
+    
+    try {
+        const response = await fetch('/api/upload-checklist-pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        document.getElementById('progressFill').style.width = '80%';
+        document.getElementById('progressStatus').textContent = 'Processando resposta...';
+        
+        const data = await response.json();
+        
+        document.getElementById('progressFill').style.width = '100%';
+        
+        if (data.success) {
+            document.getElementById('progressStatus').textContent = '✅ PDF processado com sucesso!';
+            setTimeout(() => {
+                alert('✅ ' + data.message);
+                fecharModalUploadPDF();
+                window.location.reload();
+            }, 1000);
+        } else {
+            document.getElementById('progressStatus').textContent = '❌ Erro no processamento';
+            alert('❌ ' + data.message);
+            document.getElementById('btnUploadPDF').disabled = false;
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        document.getElementById('progressStatus').textContent = '❌ Erro de conexão';
+        alert('Erro de conexão: ' + error.message);
+        document.getElementById('btnUploadPDF').disabled = false;
+    }
+}
+
+// ==================== FUNÇÕES DE PROCESSAMENTO DE TEXTO ====================
+
+function abrirModalProcessarTexto() {
+    document.getElementById('modalProcessarTexto').classList.add('active');
+    fecharModalItensPadrao();
+}
+
+function fecharModalProcessarTexto() {
+    document.getElementById('modalProcessarTexto').classList.remove('active');
+    document.getElementById('formProcessarTexto').reset();
+}
+
+async function processarTextoChecklist(event) {
+    event.preventDefault();
+    
+    const equipamentoId = document.getElementById('textoEquipamentoId').value;
+    const texto = document.getElementById('checklistTexto').value;
+    
+    if (!equipamentoId || !texto) {
+        alert('Selecione um equipamento e insira o texto');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/processar-checklist-texto', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                equipamento_id: equipamentoId,
+                texto: texto
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            itensExtraidos = data.itens;
+            mostrarPreviewItens(data.itens, equipamentoId);
+            fecharModalProcessarTexto();
+        } else {
+            alert('❌ ' + data.message);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro de conexão: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function mostrarPreviewItens(itens, equipamentoId) {
+    const previewContent = document.getElementById('previewContent');
+    const modal = document.getElementById('modalPreview');
+    
+    let html = '<h4>Itens Encontrados:</h4><div style="margin-top:15px;">';
+    
+    itens.forEach((item, index) => {
+        html += `
+            <div class="preview-item">
+                <i class="fas fa-check-circle"></i>
+                <div style="flex:1;">
+                    <div><strong>${item.ponto_inspecao}</strong></div>
+                    <div><span class="sistema">${item.conforme}</span></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div><p style="margin-top:15px; color:#5a6f84;">Total: <strong>${itens.length}</strong> itens encontrados</p>`;
+    
+    previewContent.innerHTML = html;
+    modal.classList.add('active');
+    
+    // Configurar botão de confirmação
+    document.getElementById('btnConfirmarImportacao').onclick = () => {
+        confirmarImportacao(equipamentoId);
+    };
+}
+
+function fecharModalPreview() {
+    document.getElementById('modalPreview').classList.remove('active');
+}
+
+async function confirmarImportacao(equipamentoId) {
+    if (!itensExtraidos || itensExtraidos.length === 0) return;
+    
+    showLoading();
+    
+    try {
+        // Para cada item extraído, adicionar ao banco
+        for (const item of itensExtraidos) {
+            const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sistema: 'Geral',
+                    descricao: item.ponto_inspecao,
+                    ordem: 0
+                })
+            });
+            
+            await response.json();
+        }
+        
+        alert('✅ Itens importados com sucesso!');
+        fecharModalPreview();
+        window.location.reload();
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar itens: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ==================== FUNÇÕES DE TESTE DA API GROQ ====================
+
+async function testarGroqAPI() {
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/testar-groq');
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ API Groq está funcionando!\nResposta: ' + data.resposta);
+        } else {
+            alert('❌ Erro na API Groq: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro de conexão: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ==================== FUNÇÕES DE GERENCIAMENTO DE EQUIPAMENTOS ====================
 
 function abrirModalGerenciarEquipamentos() {
     document.getElementById('modalGerenciarEquipamentos').classList.add('active');
@@ -505,7 +1009,7 @@ function fecharModalEquipamento() {
 
 async function editarEquipamento(id) {
     try {
-        const response = await fetch(`/api/equipamentos`);
+        const response = await fetch('/api/equipamentos');
         const equipamentos = await response.json();
         const equipamento = equipamentos.find(e => e.id === id);
         
@@ -516,7 +1020,6 @@ async function editarEquipamento(id) {
             document.getElementById('equipamentoModelo').value = equipamento.modelo || '';
             document.getElementById('equipamentoFabricante').value = equipamento.fabricante || '';
             
-            // Buscar mais detalhes do equipamento
             const tipoSelect = document.getElementById('equipamentoTipo');
             for (let i = 0; i < tipoSelect.options.length; i++) {
                 if (tipoSelect.options[i].value === equipamento.tipo) {
@@ -530,6 +1033,7 @@ async function editarEquipamento(id) {
             fecharModalGerenciarEquipamentos();
         }
     } catch (error) {
+        console.error('Erro:', error);
         alert('Erro ao carregar dados do equipamento');
     }
 }
@@ -551,14 +1055,12 @@ async function salvarEquipamento(event) {
     try {
         let response;
         if (id) {
-            // Atualizar
             response = await fetch(`/api/equipamentos/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(equipamento)
             });
         } else {
-            // Criar
             response = await fetch('/api/equipamentos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -576,6 +1078,7 @@ async function salvarEquipamento(event) {
             hideLoading();
         }
     } catch (error) {
+        console.error('Erro:', error);
         alert('Erro de conexão');
         hideLoading();
     }
@@ -600,12 +1103,15 @@ function confirmarExcluirEquipamento(id, nome) {
                     hideLoading();
                 }
             } catch (error) {
+                console.error('Erro:', error);
                 alert('Erro de conexão');
                 hideLoading();
             }
         }
     );
 }
+
+// ==================== FUNÇÕES DE ITENS PADRÃO ====================
 
 async function gerenciarItensPadrao(equipamentoId, equipamentoNome) {
     equipamentoAtualId = equipamentoId;
@@ -639,7 +1145,7 @@ async function carregarItensPadrao(equipamentoId) {
                         <div class="item-padrao-ordem">Ordem: ${item.ordem}</div>
                     </div>
                     <div class="equipamento-actions">
-                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema || ''}', '${item.descricao}', ${item.ordem})" title="Editar">
+                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema || ''}', '${item.descricao.replace(/'/g, "\\'")}', ${item.ordem})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete" onclick="confirmarExcluirItemPadrao(${item.id})" title="Excluir">
@@ -692,12 +1198,17 @@ async function salvarItemPadrao(event) {
         ordem: parseInt(document.getElementById('itemPadraoOrdem').value) || 0
     };
 
+    if (!equipamentoId) {
+        alert('Erro: ID do equipamento não encontrado');
+        return;
+    }
+
     showLoading();
 
     try {
         let response;
         if (id) {
-            // Atualizar - precisa implementar rota PUT para itens
+            // Implementar edição quando necessário
             alert('Edição de item será implementada em breve');
             hideLoading();
             return;
@@ -720,19 +1231,21 @@ async function salvarItemPadrao(event) {
             hideLoading();
         }
     } catch (error) {
+        console.error('Erro:', error);
         alert('Erro de conexão');
         hideLoading();
     }
 }
 
 function confirmarExcluirItemPadrao(id) {
+    itemParaExcluir = id;
     mostrarConfirmacao(
         'Excluir Item',
         'Tem certeza que deseja excluir este item do checklist?',
         async () => {
             showLoading();
             try {
-                const response = await fetch(`/api/equipamentos/itens-padrao/${id}`, {
+                const response = await fetch(`/api/equipamentos/itens-padrao/${itemParaExcluir}`, {
                     method: 'DELETE'
                 });
                 const data = await response.json();
@@ -744,12 +1257,15 @@ function confirmarExcluirItemPadrao(id) {
                     hideLoading();
                 }
             } catch (error) {
+                console.error('Erro:', error);
                 alert('Erro de conexão');
                 hideLoading();
             }
         }
     );
 }
+
+// ==================== FUNÇÕES DO CHECKLIST ====================
 
 function iniciarChecklist(equipamentoId) {
     if (!equipamentoId) {
@@ -776,23 +1292,70 @@ function iniciarChecklist(equipamentoId) {
         }
     })
     .catch(error => {
+        console.error('Erro:', error);
         alert('Erro de conexão');
         hideLoading();
     });
 }
 
-function visualizarRelatorio(checklistId) {
-    alert('Relatório do checklist #' + checklistId + '\nEm produção, isso abriria o PDF do relatório.');
+async function atualizarItem(checklistId, itemId, concluido) {
+    try {
+        const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ concluido: concluido })
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('Erro ao atualizar item');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
 }
 
-function mudarChecklist() {
-    const selector = document.getElementById('checklistSelector');
-    if (selector) {
-        const checklistId = selector.value;
-        if (checklistId) {
-            window.location.href = '/modulo/checklist?checklist_id=' + checklistId;
+function finalizarChecklist(checklistId) {
+    const observacoes = document.getElementById('observacoes').value;
+    
+    mostrarConfirmacao(
+        'Concluir Checklist',
+        'Tem certeza que deseja finalizar este checklist? O relatório será enviado ao PCM.',
+        async () => {
+            showLoading();
+            
+            try {
+                const response = await fetch(`/api/checklist/${checklistId}/finalizar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ observacoes: observacoes })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Checklist finalizado com sucesso! Relatório enviado.');
+                    window.location.reload();
+                } else {
+                    alert('Erro: ' + data.message);
+                    hideLoading();
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro de conexão');
+                hideLoading();
+            }
         }
-    }
+    );
+}
+
+function visualizarRelatorio(checklistId) {
+    alert('Relatório do checklist #' + checklistId + '\nEm produção, isso abriria o PDF do relatório.');
 }
 
 function confirmarExcluirChecklist(id, equipamentoNome) {
@@ -814,12 +1377,15 @@ function confirmarExcluirChecklist(id, equipamentoNome) {
                     hideLoading();
                 }
             } catch (error) {
+                console.error('Erro:', error);
                 alert('Erro de conexão');
                 hideLoading();
             }
         }
     );
 }
+
+// ==================== FUNÇÕES UTILITÁRIAS ====================
 
 function showLoading() {
     document.getElementById('loading').classList.add('active');
@@ -854,7 +1420,10 @@ window.onclick = function(event) {
         'modalGerenciarEquipamentos',
         'modalEquipamento',
         'modalItensPadrao',
-        'modalItemPadrao'
+        'modalItemPadrao',
+        'modalUploadPDF',
+        'modalProcessarTexto',
+        'modalPreview'
     ];
     
     modais.forEach(modalId => {
