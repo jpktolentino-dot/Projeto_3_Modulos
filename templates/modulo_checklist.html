@@ -9,256 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_checklist.css') }}">
-    <style>
-        .equipamento-card {
-            background: #f9fbfd;
-            border: 1px solid #e0e5ec;
-            border-radius: 4px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .equipamento-card.clickable {
-            cursor: pointer;
-        }
-        .equipamento-card.clickable:hover {
-            border-color: #40b049;
-            box-shadow: 0 2px 8px rgba(64, 176, 73, 0.2);
-        }
-        .equipamento-icon {
-            width: 48px;
-            height: 48px;
-            background: #e9eff5;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #20643f;
-            font-size: 1.6rem;
-        }
-        .equipamento-info {
-            flex: 1;
-        }
-        .equipamento-info h4 {
-            font-size: 1.1rem;
-            margin-bottom: 4px;
-        }
-        .equipamento-info p {
-            color: #5a6f84;
-            font-size: 0.9rem;
-        }
-        .equipamento-actions {
-            display: flex;
-            gap: 8px;
-            margin-left: auto;
-        }
-        .action-btn {
-            background: none;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #5a6f84;
-        }
-        .action-btn:hover {
-            background: #e9eff5;
-        }
-        .action-btn.delete:hover {
-            background: #dc3545;
-            color: white;
-        }
-        .action-btn.edit:hover {
-            background: #40b049;
-            color: white;
-        }
-        .action-btn.pdf:hover {
-            background: #dc3545;
-            color: white;
-        }
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .status-pendente {
-            background: #40b049;
-            color: white;
-        }
-        .status-concluido {
-            background: #28a745;
-            color: white;
-        }
-        .sem-checklist {
-            text-align: center;
-            padding: 40px 20px;
-            background: #f5f7fa;
-            border-radius: 4px;
-            color: #5a6f84;
-        }
-        .sem-checklist i {
-            font-size: 3rem;
-            color: #40b049;
-            margin-bottom: 15px;
-        }
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #40b049;
-        }
-        .admin-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #20643f;
-        }
-        .admin-title i {
-            color: #40b049;
-            font-size: 1.5rem;
-        }
-        .item-padrao {
-            background: #f9fbfd;
-            border: 1px solid #e0e5ec;
-            border-radius: 4px;
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .item-padrao-info {
-            flex: 1;
-        }
-        .item-padrao-sistema {
-            font-size: 0.85rem;
-            color: #40b049;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .item-padrao-descricao {
-            font-size: 0.95rem;
-        }
-        .item-padrao-ordem {
-            font-size: 0.8rem;
-            color: #5a6f84;
-        }
-        
-        /* Estilos para upload de PDF */
-        .upload-area {
-            border: 2px dashed #40b049;
-            border-radius: 4px;
-            padding: 30px;
-            text-align: center;
-            background: #f9fbfd;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
-        }
-        .upload-area:hover {
-            background: #e9eff5;
-            border-color: #20643f;
-        }
-        .upload-area i {
-            font-size: 3rem;
-            color: #40b049;
-            margin-bottom: 10px;
-        }
-        .upload-area p {
-            color: #5a6f84;
-            margin-bottom: 5px;
-        }
-        .upload-area small {
-            color: #7c8b9f;
-            font-size: 0.85rem;
-        }
-        .upload-area.dragover {
-            background: #e0f0e0;
-            border-color: #20643f;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: #e0e5ec;
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: #40b049;
-            width: 0%;
-            transition: width 0.3s;
-            animation: progressPulse 1.5s infinite;
-        }
-        @keyframes progressPulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-        
-        .preview-item {
-            background: white;
-            border: 1px solid #e0e5ec;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .preview-item i {
-            color: #40b049;
-        }
-        .preview-item .sistema {
-            font-size: 0.8rem;
-            color: #20643f;
-            font-weight: 600;
-            background: #e9eff5;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        
-        .badge-success {
-            background: #28a745;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-        }
-        
-        .info-box {
-            background: #e9eff5;
-            border-left: 4px solid #40b049;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-        .info-box i {
-            color: #40b049;
-            margin-right: 8px;
-        }
-        
-        .btn-pdf {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-pdf:hover {
-            background: #c82333;
-        }
-    </style>
 </head>
 <body>
 <div class="loading" id="loading">
@@ -314,7 +64,7 @@
                             </div>
                             <div class="equipamento-info">
                                 <h4>{{ chk.equipamento.nome }}</h4>
-                                <p>{{ chk.equipamento.modelo }} · {{ chk.equipamento.fabricante }}</p>
+                                <p>{{ chk.equipamento.modelo }} · {{ chk.equipamento.fabricante }} · {{ chk.equipamento.tipo }}</p>
                             </div>
                             <div class="status-badge {% if chk.status == 'pendente' %}status-pendente{% else %}status-concluido{% endif %}">
                                 {% if chk.status == 'pendente' %}Em andamento{% else %}Concluído{% endif %}
@@ -388,38 +138,142 @@
 
             {% if checklist %}
                 <!-- Checklist em andamento -->
-                <div style="margin-top: 30px;">
-                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3>{{ checklist.equipamento.nome }}</h3>
-                        {% if checklist.status == 'pendente' %}
-                        <span class="status-tag" style="background:#40b049; color:white;">Em andamento</span>
-                        {% else %}
-                        <span class="status-tag" style="background:#28a745; color:white;">Concluído</span>
-                        {% endif %}
-                    </div>
-                    
-                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e0e5ec; border-radius: 4px; padding: 10px;">
-                        {% for item in checklist.itens %}
-                        <div class="checklist-item">
-                            <input type="checkbox" 
-                                   {% if item.concluido %}checked{% endif %} 
-                                   {% if checklist.status == 'concluido' %}disabled{% endif %}
-                                   onchange="atualizarItem({{ checklist.id }}, {{ item.id }}, this.checked)">
-                            <span style="{% if item.concluido %}text-decoration: line-through; color:#6c757d;{% endif %}">
-                                {{ item.descricao }}
-                            </span>
+                <div class="checklist-container" style="margin-top: 30px;">
+                    <div class="checklist-header">
+                        <h3><i class="fas fa-clipboard-list"></i> {{ checklist.equipamento.nome }}</h3>
+                        <div class="checklist-info">
+                            <span><i class="fas fa-tag"></i> {{ checklist.equipamento.tipo }}</span>
+                            <span><i class="fas fa-barcode"></i> {{ checklist.equipamento.modelo }}</span>
+                            <span><i class="fas fa-industry"></i> {{ checklist.equipamento.fabricante }}</span>
                         </div>
-                        {% endfor %}
                     </div>
 
-                    <div class="obs-box">
-                        <label style="font-weight:600;">Observações:</label>
-                        <textarea rows="3" id="observacoes" placeholder="Registre observações importantes..." 
+                    <!-- Estatísticas do checklist -->
+                    <div class="checklist-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon total">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>{{ checklist.itens|length }}</h4>
+                                <p>Total de Itens</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon sim">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 id="totalSim">0</h4>
+                                <p>Conforme (Sim)</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon nao">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 id="totalNao">0</h4>
+                                <p>Não Conforme</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon na">
+                                <i class="fas fa-minus-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 id="totalNA">0</h4>
+                                <p>Não Aplicável</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if checklist.status == 'pendente' %}
+                    <!-- Barra de ferramentas -->
+                    <div class="checklist-toolbar">
+                        <div class="toolbar-group">
+                            <label><i class="fas fa-plus-circle"></i> Adicionar Itens:</label>
+                            <button class="toolbar-btn" onclick="abrirModalAdicionarItem()">
+                                <i class="fas fa-plus"></i> Novo Item
+                            </button>
+                            <button class="toolbar-btn" onclick="adicionarLinhasEmBranco()">
+                                <i class="fas fa-layer-group"></i> Adicionar Múltiplos
+                            </button>
+                        </div>
+                        <div class="toolbar-group">
+                            <label>Quantidade:</label>
+                            <input type="number" id="qtdLinhas" min="1" max="20" value="5">
+                            <button class="toolbar-btn" onclick="adicionarLinhasEmBranco()">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Grid do checklist -->
+                    <div class="checklist-grid">
+                        <!-- Cabeçalho -->
+                        <div class="checklist-header-row">
+                            <div class="checklist-header-item">Pontos de Inspeção</div>
+                            <div class="checklist-header-status">
+                                <span>SIM</span>
+                                <span>NÃO</span>
+                                <span>N/A</span>
+                            </div>
+                            <div class="checklist-header-item"></div>
+                        </div>
+
+                        <!-- Itens do checklist -->
+                        <div id="checklist-items-container">
+                            {% for item in checklist.itens %}
+                            <div class="checklist-row" data-item-id="{{ item.id }}">
+                                <div class="checklist-descricao">
+                                    {{ item.descricao }}
+                                    {% if item.observacao %}
+                                    <small><i class="fas fa-comment"></i> {{ item.observacao }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="checklist-status-group">
+                                    <button class="status-option sim {% if item.status == 'sim' %}active{% endif %}" 
+                                            onclick="atualizarStatusItem({{ checklist.id }}, {{ item.id }}, 'sim')"
+                                            {% if checklist.status == 'concluido' %}disabled{% endif %}>
+                                        SIM
+                                    </button>
+                                    <button class="status-option nao {% if item.status == 'nao' %}active{% endif %}" 
+                                            onclick="atualizarStatusItem({{ checklist.id }}, {{ item.id }}, 'nao')"
+                                            {% if checklist.status == 'concluido' %}disabled{% endif %}>
+                                        NÃO
+                                    </button>
+                                    <button class="status-option na {% if item.status == 'na' %}active{% endif %}" 
+                                            onclick="atualizarStatusItem({{ checklist.id }}, {{ item.id }}, 'na')"
+                                            {% if checklist.status == 'concluido' %}disabled{% endif %}>
+                                        N/A
+                                    </button>
+                                </div>
+                                <div class="checklist-actions">
+                                    {% if checklist.status == 'pendente' %}
+                                    <button class="edit" onclick="abrirModalObservacao({{ checklist.id }}, {{ item.id }}, '{{ item.observacao|default('', true) }}')" title="Adicionar observação">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="delete" onclick="removerItemChecklist({{ checklist.id }}, {{ item.id }})" title="Remover item">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Observações gerais -->
+                    <div class="obs-box" style="margin-top: 20px;">
+                        <label style="font-weight:600;">Observações Gerais:</label>
+                        <textarea rows="3" id="observacoes" placeholder="Registre observações importantes sobre a inspeção..." 
                                   {% if checklist.status == 'concluido' %}readonly{% endif %}>{{ checklist.observacoes or '' }}</textarea>
                     </div>
 
                     {% if checklist.status == 'pendente' %}
-                    <button class="btn" style="background:#40b049;" onclick="finalizarChecklist({{ checklist.id }})">
+                    <button class="btn" style="background:#40b049; margin-top:20px;" onclick="finalizarChecklist({{ checklist.id }})">
                         <i class="fas fa-envelope"></i> Concluir & Enviar Relatório
                     </button>
                     {% else %}
@@ -515,16 +369,8 @@
                 <input type="text" id="equipamentoFabricante">
             </div>
             <div class="form-group">
-                <label>Tipo</label>
-                <select id="equipamentoTipo">
-                    <option value="Hidráulico">Hidráulico</option>
-                    <option value="Pneumático">Pneumático</option>
-                    <option value="Elétrico">Elétrico</option>
-                    <option value="Mecânico">Mecânico</option>
-                    <option value="Robótica">Robótica</option>
-                    <option value="Usinagem">Usinagem</option>
-                    <option value="Veículo Pesado">Veículo Pesado</option>
-                </select>
+                <label>Tipo do Equipamento *</label>
+                <input type="text" id="equipamentoTipo" required placeholder="Ex: Prensa Hidráulica, Compressor, Caminhão...">
             </div>
             <div class="form-group">
                 <label>Link do Manual (PDF)</label>
@@ -577,11 +423,6 @@
                     <div class="progress-bar-fill" id="progressFill" style="width: 0%;"></div>
                 </div>
                 <p style="text-align: center; color: #5a6f84;" id="progressStatus">Processando PDF com IA...</p>
-            </div>
-            
-            <div id="previewArea" style="display: none; margin: 20px 0; max-height: 300px; overflow-y: auto;">
-                <h4>Itens Extraídos <span id="itemCount" class="badge-success"></span></h4>
-                <div id="previewList"></div>
             </div>
             
             <div style="display:flex; gap:10px;">
@@ -690,17 +531,77 @@
     </div>
 </div>
 
-<!-- Modal de Confirmação -->
-<div class="modal" id="modalConfirmacao">
+<!-- Modal para Adicionar Item Manualmente -->
+<div class="modal" id="modalAdicionarItem">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Confirmar Ação</h3>
-            <button class="close-btn" onclick="fecharModalConfirmacao()">&times;</button>
+            <h3><i class="fas fa-plus-circle"></i> Adicionar Item ao Checklist</h3>
+            <button class="close-btn" onclick="fecharModalAdicionarItem()">&times;</button>
         </div>
-        <p id="modalMensagem"></p>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
-            <button class="btn" style="flex:1; background:#40b049;" id="modalConfirmarBtn">Confirmar</button>
+        
+        <div class="add-item-form">
+            <div class="form-group">
+                <label>Descrição do Item *</label>
+                <input type="text" id="novoItemDescricao" placeholder="Ex: Verificar nível de óleo do motor" required>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="fecharModalAdicionarItem()">Cancelar</button>
+                <button class="btn" style="flex:1; background:#40b049;" onclick="adicionarItemChecklist()">
+                    <i class="fas fa-save"></i> Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Múltiplas Linhas -->
+<div class="modal" id="modalMultiplasLinhas">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-layer-group"></i> Adicionar Múltiplas Linhas</h3>
+            <button class="close-btn" onclick="fecharModalMultiplasLinhas()">&times;</button>
+        </div>
+        
+        <div class="add-item-form">
+            <div class="form-group">
+                <label>Quantidade de linhas</label>
+                <input type="number" id="qtdMultiplasLinhas" min="1" max="20" value="5">
+            </div>
+            <div class="form-group">
+                <label>Prefixo para as linhas (opcional)</label>
+                <input type="text" id="prefixoLinhas" placeholder="Ex: Verificar, Inspecionar, Testar...">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="fecharModalMultiplasLinhas()">Cancelar</button>
+                <button class="btn" style="flex:1; background:#40b049;" onclick="adicionarMultiplasLinhas()">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Observação do Item -->
+<div class="modal" id="modalObservacao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-comment"></i> Observação do Item</h3>
+            <button class="close-btn" onclick="fecharModalObservacao()">&times;</button>
+        </div>
+        
+        <div class="add-item-form">
+            <input type="hidden" id="observacaoChecklistId">
+            <input type="hidden" id="observacaoItemId">
+            <div class="form-group">
+                <label>Observação</label>
+                <textarea id="observacaoTexto" rows="4" placeholder="Digite observações sobre este item..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="fecharModalObservacao()">Cancelar</button>
+                <button class="btn" style="flex:1; background:#40b049;" onclick="salvarObservacao()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -726,714 +627,20 @@
     </div>
 </div>
 
-<script>
-let equipamentoAtualId = null;
-let itensExtraidos = [];
-let itemParaExcluir = null;
-
-// ==================== FUNÇÕES DE UPLOAD DE PDF ====================
-
-function abrirModalUploadPDF() {
-    document.getElementById('modalUploadPDF').classList.add('active');
-    resetUploadForm();
-}
-
-function fecharModalUploadPDF() {
-    document.getElementById('modalUploadPDF').classList.remove('active');
-    resetUploadForm();
-}
-
-function resetUploadForm() {
-    document.getElementById('formUploadPDF').reset();
-    document.getElementById('uploadProgress').style.display = 'none';
-    document.getElementById('previewArea').style.display = 'none';
-    document.getElementById('fileInfo').style.display = 'none';
-    document.getElementById('btnUploadPDF').disabled = false;
-    document.getElementById('progressFill').style.width = '0%';
-}
-
-function handleFileSelect(input) {
-    const file = input.files[0];
-    if (file) {
-        document.getElementById('fileName').textContent = file.name;
-        document.getElementById('fileInfo').style.display = 'block';
-    }
-}
-
-// Drag and drop
-const uploadArea = document.getElementById('uploadArea');
-if (uploadArea) {
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        
-        const file = e.dataTransfer.files[0];
-        if (file && file.type === 'application/pdf') {
-            document.getElementById('pdfFile').files = e.dataTransfer.files;
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileInfo').style.display = 'block';
-        } else {
-            alert('Por favor, arraste apenas arquivos PDF');
-        }
-    });
-}
-
-async function uploadChecklistPDF(event) {
-    event.preventDefault();
-    
-    const equipamentoId = document.getElementById('uploadEquipamentoId').value;
-    const fileInput = document.getElementById('pdfFile');
-    const file = fileInput.files[0];
-    
-    if (!equipamentoId || !file) {
-        alert('Selecione um equipamento e um arquivo PDF');
-        return;
-    }
-    
-    // Mostrar progresso
-    document.getElementById('uploadProgress').style.display = 'block';
-    document.getElementById('btnUploadPDF').disabled = true;
-    document.getElementById('progressStatus').textContent = 'Enviando arquivo...';
-    document.getElementById('progressFill').style.width = '30%';
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('equipamento_id', equipamentoId);
-    
-    try {
-        const response = await fetch('/api/upload-checklist-pdf', {
-            method: 'POST',
-            body: formData
-        });
-        
-        document.getElementById('progressFill').style.width = '80%';
-        document.getElementById('progressStatus').textContent = 'Processando resposta...';
-        
-        const data = await response.json();
-        
-        document.getElementById('progressFill').style.width = '100%';
-        
-        if (data.success) {
-            document.getElementById('progressStatus').textContent = '✅ PDF processado com sucesso!';
-            setTimeout(() => {
-                alert('✅ ' + data.message);
-                fecharModalUploadPDF();
-                window.location.reload();
-            }, 1000);
-        } else {
-            document.getElementById('progressStatus').textContent = '❌ Erro no processamento';
-            alert('❌ ' + data.message);
-            document.getElementById('btnUploadPDF').disabled = false;
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        document.getElementById('progressStatus').textContent = '❌ Erro de conexão';
-        alert('Erro de conexão: ' + error.message);
-        document.getElementById('btnUploadPDF').disabled = false;
-    }
-}
-
-// ==================== FUNÇÕES DE PROCESSAMENTO DE TEXTO ====================
-
-function abrirModalProcessarTexto() {
-    document.getElementById('modalProcessarTexto').classList.add('active');
-    fecharModalItensPadrao();
-}
-
-function fecharModalProcessarTexto() {
-    document.getElementById('modalProcessarTexto').classList.remove('active');
-    document.getElementById('formProcessarTexto').reset();
-}
-
-async function processarTextoChecklist(event) {
-    event.preventDefault();
-    
-    const equipamentoId = document.getElementById('textoEquipamentoId').value;
-    const texto = document.getElementById('checklistTexto').value;
-    
-    if (!equipamentoId || !texto) {
-        alert('Selecione um equipamento e insira o texto');
-        return;
-    }
-    
-    showLoading();
-    
-    try {
-        const response = await fetch('/api/processar-checklist-texto', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                equipamento_id: equipamentoId,
-                texto: texto
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            itensExtraidos = data.itens;
-            mostrarPreviewItens(data.itens, equipamentoId);
-            fecharModalProcessarTexto();
-        } else {
-            alert('❌ ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro de conexão: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
-function mostrarPreviewItens(itens, equipamentoId) {
-    const previewContent = document.getElementById('previewContent');
-    const modal = document.getElementById('modalPreview');
-    
-    let html = '<h4>Itens Encontrados:</h4><div style="margin-top:15px;">';
-    
-    itens.forEach((item, index) => {
-        html += `
-            <div class="preview-item">
-                <i class="fas fa-check-circle"></i>
-                <div style="flex:1;">
-                    <div><strong>${item.ponto_inspecao}</strong></div>
-                    <div><span class="sistema">${item.conforme}</span></div>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += `</div><p style="margin-top:15px; color:#5a6f84;">Total: <strong>${itens.length}</strong> itens encontrados</p>`;
-    
-    previewContent.innerHTML = html;
-    modal.classList.add('active');
-    
-    // Configurar botão de confirmação
-    document.getElementById('btnConfirmarImportacao').onclick = () => {
-        confirmarImportacao(equipamentoId);
-    };
-}
-
-function fecharModalPreview() {
-    document.getElementById('modalPreview').classList.remove('active');
-}
-
-async function confirmarImportacao(equipamentoId) {
-    if (!itensExtraidos || itensExtraidos.length === 0) return;
-    
-    showLoading();
-    
-    try {
-        // Para cada item extraído, adicionar ao banco
-        for (const item of itensExtraidos) {
-            const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    sistema: 'Geral',
-                    descricao: item.ponto_inspecao,
-                    ordem: 0
-                })
-            });
-            
-            await response.json();
-        }
-        
-        alert('✅ Itens importados com sucesso!');
-        fecharModalPreview();
-        window.location.reload();
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao salvar itens: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
-// ==================== FUNÇÕES DE TESTE DA API GROQ ====================
-
-async function testarGroqAPI() {
-    showLoading();
-    
-    try {
-        const response = await fetch('/api/testar-groq');
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('✅ API Groq está funcionando!\nResposta: ' + data.resposta);
-        } else {
-            alert('❌ Erro na API Groq: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro de conexão: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
-// ==================== FUNÇÕES DE GERENCIAMENTO DE EQUIPAMENTOS ====================
-
-function abrirModalGerenciarEquipamentos() {
-    document.getElementById('modalGerenciarEquipamentos').classList.add('active');
-}
-
-function fecharModalGerenciarEquipamentos() {
-    document.getElementById('modalGerenciarEquipamentos').classList.remove('active');
-}
-
-function abrirModalCadastroEquipamento() {
-    document.getElementById('modalEquipamentoTitulo').textContent = 'Cadastrar Equipamento';
-    document.getElementById('equipamentoId').value = '';
-    document.getElementById('formEquipamento').reset();
-    document.getElementById('modalEquipamento').classList.add('active');
-    fecharModalGerenciarEquipamentos();
-}
-
-function fecharModalEquipamento() {
-    document.getElementById('modalEquipamento').classList.remove('active');
-}
-
-async function editarEquipamento(id) {
-    try {
-        const response = await fetch('/api/equipamentos');
-        const equipamentos = await response.json();
-        const equipamento = equipamentos.find(e => e.id === id);
-        
-        if (equipamento) {
-            document.getElementById('modalEquipamentoTitulo').textContent = 'Editar Equipamento';
-            document.getElementById('equipamentoId').value = equipamento.id;
-            document.getElementById('equipamentoNome').value = equipamento.nome;
-            document.getElementById('equipamentoModelo').value = equipamento.modelo || '';
-            document.getElementById('equipamentoFabricante').value = equipamento.fabricante || '';
-            
-            const tipoSelect = document.getElementById('equipamentoTipo');
-            for (let i = 0; i < tipoSelect.options.length; i++) {
-                if (tipoSelect.options[i].value === equipamento.tipo) {
-                    tipoSelect.selectedIndex = i;
-                    break;
-                }
-            }
-            
-            document.getElementById('equipamentoManual').value = equipamento.manual_pdf || '';
-            document.getElementById('modalEquipamento').classList.add('active');
-            fecharModalGerenciarEquipamentos();
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro ao carregar dados do equipamento');
-    }
-}
-
-async function salvarEquipamento(event) {
-    event.preventDefault();
-    
-    const id = document.getElementById('equipamentoId').value;
-    const equipamento = {
-        nome: document.getElementById('equipamentoNome').value,
-        modelo: document.getElementById('equipamentoModelo').value,
-        fabricante: document.getElementById('equipamentoFabricante').value,
-        tipo: document.getElementById('equipamentoTipo').value,
-        manual_pdf: document.getElementById('equipamentoManual').value
-    };
-
-    showLoading();
-
-    try {
-        let response;
-        if (id) {
-            response = await fetch(`/api/equipamentos/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(equipamento)
-            });
-        } else {
-            response = await fetch('/api/equipamentos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(equipamento)
-            });
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert(id ? 'Equipamento atualizado!' : 'Equipamento cadastrado!');
-            window.location.reload();
-        } else {
-            alert('Erro: ' + data.message);
-            hideLoading();
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro de conexão');
-        hideLoading();
-    }
-}
-
-function confirmarExcluirEquipamento(id, nome) {
-    mostrarConfirmacao(
-        'Excluir Equipamento',
-        `Tem certeza que deseja excluir "${nome}"? Esta ação não pode ser desfeita e todos os checklists e chamados relacionados serão perdidos.`,
-        async () => {
-            showLoading();
-            try {
-                const response = await fetch(`/api/equipamentos/${id}`, {
-                    method: 'DELETE'
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('Equipamento excluído!');
-                    window.location.reload();
-                } else {
-                    alert('Erro ao excluir');
-                    hideLoading();
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro de conexão');
-                hideLoading();
-            }
-        }
-    );
-}
-
-// ==================== FUNÇÕES DE ITENS PADRÃO ====================
-
-async function gerenciarItensPadrao(equipamentoId, equipamentoNome) {
-    equipamentoAtualId = equipamentoId;
-    document.getElementById('modalItensTitulo').textContent = `Itens - ${equipamentoNome}`;
-    document.getElementById('itemPadraoEquipamentoId').value = equipamentoId;
-    
-    await carregarItensPadrao(equipamentoId);
-    document.getElementById('modalItensPadrao').classList.add('active');
-    fecharModalGerenciarEquipamentos();
-}
-
-async function carregarItensPadrao(equipamentoId) {
-    try {
-        const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`);
-        const itens = await response.json();
-        
-        const container = document.getElementById('itensPadraoList');
-        
-        if (itens.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#5a6f84;">Nenhum item cadastrado</p>';
-            return;
-        }
-        
-        let html = '';
-        itens.sort((a, b) => a.ordem - b.ordem).forEach(item => {
-            html += `
-                <div class="item-padrao">
-                    <div class="item-padrao-info">
-                        <div class="item-padrao-sistema">${item.sistema || 'Geral'}</div>
-                        <div class="item-padrao-descricao">${item.descricao}</div>
-                        <div class="item-padrao-ordem">Ordem: ${item.ordem}</div>
-                    </div>
-                    <div class="equipamento-actions">
-                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema || ''}', '${item.descricao.replace(/'/g, "\\'")}', ${item.ordem})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete" onclick="confirmarExcluirItemPadrao(${item.id})" title="Excluir">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    } catch (error) {
-        console.error('Erro ao carregar itens:', error);
-    }
-}
-
-function fecharModalItensPadrao() {
-    document.getElementById('modalItensPadrao').classList.remove('active');
-    equipamentoAtualId = null;
-}
-
-function abrirModalItemPadrao() {
-    document.getElementById('modalItemTitulo').textContent = 'Novo Item';
-    document.getElementById('itemPadraoId').value = '';
-    document.getElementById('formItemPadrao').reset();
-    document.getElementById('modalItemPadrao').classList.add('active');
-}
-
-function fecharModalItemPadrao() {
-    document.getElementById('modalItemPadrao').classList.remove('active');
-}
-
-function editarItemPadrao(id, sistema, descricao, ordem) {
-    document.getElementById('modalItemTitulo').textContent = 'Editar Item';
-    document.getElementById('itemPadraoId').value = id;
-    document.getElementById('itemPadraoSistema').value = sistema;
-    document.getElementById('itemPadraoDescricao').value = descricao;
-    document.getElementById('itemPadraoOrdem').value = ordem;
-    document.getElementById('modalItemPadrao').classList.add('active');
-}
-
-async function salvarItemPadrao(event) {
-    event.preventDefault();
-    
-    const id = document.getElementById('itemPadraoId').value;
-    const equipamentoId = equipamentoAtualId;
-    const item = {
-        sistema: document.getElementById('itemPadraoSistema').value || 'Geral',
-        descricao: document.getElementById('itemPadraoDescricao').value,
-        ordem: parseInt(document.getElementById('itemPadraoOrdem').value) || 0
-    };
-
-    if (!equipamentoId) {
-        alert('Erro: ID do equipamento não encontrado');
-        return;
-    }
-
-    showLoading();
-
-    try {
-        let response;
-        if (id) {
-            // Implementar edição quando necessário
-            alert('Edição de item será implementada em breve');
-            hideLoading();
-            return;
-        } else {
-            response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-            });
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            fecharModalItemPadrao();
-            await carregarItensPadrao(equipamentoId);
-            hideLoading();
-        } else {
-            alert('Erro: ' + data.message);
-            hideLoading();
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro de conexão');
-        hideLoading();
-    }
-}
-
-function confirmarExcluirItemPadrao(id) {
-    itemParaExcluir = id;
-    mostrarConfirmacao(
-        'Excluir Item',
-        'Tem certeza que deseja excluir este item do checklist?',
-        async () => {
-            showLoading();
-            try {
-                const response = await fetch(`/api/equipamentos/itens-padrao/${itemParaExcluir}`, {
-                    method: 'DELETE'
-                });
-                const data = await response.json();
-                if (data.success) {
-                    await carregarItensPadrao(equipamentoAtualId);
-                    hideLoading();
-                } else {
-                    alert('Erro ao excluir');
-                    hideLoading();
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro de conexão');
-                hideLoading();
-            }
-        }
-    );
-}
-
-// ==================== FUNÇÕES DO CHECKLIST ====================
-
-function iniciarChecklist(equipamentoId) {
-    if (!equipamentoId) {
-        alert('Selecione um equipamento');
-        return;
-    }
-
-    showLoading();
-
-    fetch('/api/checklist/iniciar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ equipamento_id: equipamentoId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = '/modulo/checklist?checklist_id=' + data.checklist_id;
-        } else {
-            alert('Erro: ' + data.message);
-            hideLoading();
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro de conexão');
-        hideLoading();
-    });
-}
-
-async function atualizarItem(checklistId, itemId, concluido) {
-    try {
-        const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ concluido: concluido })
-        });
-
-        const data = await response.json();
-        
-        if (!data.success) {
-            alert('Erro ao atualizar item');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-    }
-}
-
-function finalizarChecklist(checklistId) {
-    const observacoes = document.getElementById('observacoes').value;
-    
-    mostrarConfirmacao(
-        'Concluir Checklist',
-        'Tem certeza que deseja finalizar este checklist? O relatório será enviado ao PCM.',
-        async () => {
-            showLoading();
-            
-            try {
-                const response = await fetch(`/api/checklist/${checklistId}/finalizar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ observacoes: observacoes })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('Checklist finalizado com sucesso! Relatório enviado.');
-                    window.location.reload();
-                } else {
-                    alert('Erro: ' + data.message);
-                    hideLoading();
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro de conexão');
-                hideLoading();
-            }
-        }
-    );
-}
-
-function visualizarRelatorio(checklistId) {
-    alert('Relatório do checklist #' + checklistId + '\nEm produção, isso abriria o PDF do relatório.');
-}
-
-function confirmarExcluirChecklist(id, equipamentoNome) {
-    mostrarConfirmacao(
-        'Excluir Checklist',
-        `Tem certeza que deseja excluir o checklist do equipamento "${equipamentoNome}"? Esta ação não pode ser desfeita.`,
-        async () => {
-            showLoading();
-            try {
-                const response = await fetch(`/api/checklist/${id}`, {
-                    method: 'DELETE'
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('Checklist excluído com sucesso!');
-                    window.location.reload();
-                } else {
-                    alert('Erro ao excluir: ' + data.message);
-                    hideLoading();
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro de conexão');
-                hideLoading();
-            }
-        }
-    );
-}
-
-// ==================== FUNÇÕES UTILITÁRIAS ====================
-
-function showLoading() {
-    document.getElementById('loading').classList.add('active');
-}
-
-function hideLoading() {
-    document.getElementById('loading').classList.remove('active');
-}
-
-function fecharModalConfirmacao() {
-    document.getElementById('modalConfirmacao').classList.remove('active');
-}
-
-function mostrarConfirmacao(titulo, mensagem, callback) {
-    const modal = document.getElementById('modalConfirmacao');
-    document.getElementById('modalMensagem').textContent = mensagem;
-    document.querySelector('#modalConfirmacao .modal-header h3').textContent = titulo;
-    
-    const confirmarBtn = document.getElementById('modalConfirmarBtn');
-    confirmarBtn.onclick = function() {
-        fecharModalConfirmacao();
-        callback();
-    };
-    
-    modal.classList.add('active');
-}
-
-// Fechar modais ao clicar fora
-window.onclick = function(event) {
-    const modais = [
-        'modalConfirmacao',
-        'modalGerenciarEquipamentos',
-        'modalEquipamento',
-        'modalItensPadrao',
-        'modalItemPadrao',
-        'modalUploadPDF',
-        'modalProcessarTexto',
-        'modalPreview'
-    ];
-    
-    modais.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (event.target == modal) {
-            modal.classList.remove('active');
-        }
-    });
-}
-</script>
+<!-- Modal de Confirmação -->
+<div class="modal" id="modalConfirmacao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Ação</h3>
+            <button class="close-btn" onclick="fecharModalConfirmacao()">&times;</button>
+        </div>
+        <p id="modalMensagem"></p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button class="btn" style="flex:1; background:#40b049;" id="modalConfirmarBtn">Confirmar</button>
+        </div>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='js/modulo_checklist.js') }}"></script>
 </body>

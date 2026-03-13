@@ -278,3 +278,413 @@ h3 {
     cursor: pointer;
     color: #5a6f84;
 }
+
+/* ==================== NOVO ESTILO DO CHECKLIST ==================== */
+
+.checklist-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.checklist-header {
+    background: #f5f7fa;
+    padding: 15px 20px;
+    border-bottom: 2px solid #40b049;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checklist-header h3 {
+    margin: 0;
+    color: #20643f;
+    font-size: 1.2rem;
+}
+
+.checklist-info {
+    display: flex;
+    gap: 20px;
+    color: #5a6f84;
+    font-size: 0.9rem;
+}
+
+.checklist-info i {
+    color: #40b049;
+    margin-right: 5px;
+}
+
+/* Grid do checklist */
+.checklist-grid {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e0e5ec;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Cabeçalho das colunas */
+.checklist-header-row {
+    display: grid;
+    grid-template-columns: 1fr 200px 40px;
+    background: #20643f;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 12px 15px;
+    border-bottom: 2px solid #40b049;
+}
+
+.checklist-header-item {
+    padding: 0 5px;
+}
+
+.checklist-header-status {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    text-align: center;
+    gap: 5px;
+}
+
+.checklist-header-status span {
+    padding: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+
+/* Linhas do checklist */
+.checklist-row {
+    display: grid;
+    grid-template-columns: 1fr 200px 40px;
+    padding: 8px 15px;
+    border-bottom: 1px solid #e0e5ec;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.checklist-row:hover {
+    background: #f9fbfd;
+}
+
+.checklist-row:last-child {
+    border-bottom: none;
+}
+
+/* Coluna de descrição */
+.checklist-descricao {
+    font-size: 0.95rem;
+    color: #1a2a3a;
+    padding-right: 15px;
+    word-break: break-word;
+}
+
+.checklist-descricao small {
+    display: block;
+    font-size: 0.8rem;
+    color: #40b049;
+    margin-top: 3px;
+}
+
+/* Coluna de status */
+.checklist-status-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px;
+    text-align: center;
+}
+
+.status-option {
+    padding: 8px 5px;
+    border: 1px solid #d0d8e5;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: white;
+}
+
+.status-option:hover {
+    border-color: #40b049;
+    background: #f0f9f0;
+}
+
+.status-option.active {
+    background: #40b049;
+    color: white;
+    border-color: #40b049;
+}
+
+.status-option.sim.active {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+.status-option.nao.active {
+    background: #dc3545;
+    border-color: #dc3545;
+}
+
+.status-option.na.active {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Coluna de ações */
+.checklist-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+}
+
+.checklist-actions button {
+    background: none;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #5a6f84;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checklist-actions button:hover {
+    background: #e9eff5;
+}
+
+.checklist-actions button.delete:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* Barra de ferramentas do checklist */
+.checklist-toolbar {
+    background: #f5f7fa;
+    padding: 15px 20px;
+    border-top: 1px solid #e0e5ec;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-group label {
+    font-weight: 500;
+    color: #5a6f84;
+    font-size: 0.9rem;
+}
+
+.toolbar-group input[type="number"] {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #d0d8e5;
+    border-radius: 4px;
+}
+
+.toolbar-btn {
+    background: white;
+    border: 1px solid #20643f;
+    color: #20643f;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+    background: #20643f;
+    color: white;
+}
+
+.toolbar-btn i {
+    font-size: 0.9rem;
+}
+
+/* Campo de observação do item */
+.item-observacao {
+    margin-top: 5px;
+    display: none;
+}
+
+.item-observacao.active {
+    display: block;
+}
+
+.item-observacao textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d0d8e5;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    resize: vertical;
+    min-height: 60px;
+}
+
+/* Modal para adicionar itens manualmente */
+.add-item-form {
+    background: #f9fbfd;
+    padding: 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.add-item-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 120px auto;
+    gap: 10px;
+    align-items: start;
+}
+
+.add-item-form input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d0d8e5;
+    border-radius: 4px;
+}
+
+.add-item-form select {
+    padding: 12px;
+    border: 1px solid #d0d8e5;
+    border-radius: 4px;
+    background: white;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .checklist-header-row {
+        grid-template-columns: 1fr 160px 35px;
+        font-size: 0.8rem;
+    }
+    
+    .checklist-row {
+        grid-template-columns: 1fr 160px 35px;
+        padding: 10px;
+    }
+    
+    .checklist-status-group {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+    
+    .status-option {
+        padding: 5px;
+        font-size: 0.75rem;
+    }
+    
+    .checklist-descricao {
+        font-size: 0.85rem;
+    }
+    
+    .toolbar-group {
+        width: 100%;
+    }
+    
+    .add-item-form .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Badges de status */
+.badge-sim {
+    background: #d4edda;
+    color: #155724;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-nao {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-na {
+    background: #e2e3e5;
+    color: #383d41;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Estatísticas do checklist */
+.checklist-stats {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e0e5ec;
+    border-radius: 4px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.stat-icon.total {
+    background: #e9eff5;
+    color: #20643f;
+}
+
+.stat-icon.sim {
+    background: #d4edda;
+    color: #28a745;
+}
+
+.stat-icon.nao {
+    background: #f8d7da;
+    color: #dc3545;
+}
+
+.stat-icon.na {
+    background: #e2e3e5;
+    color: #6c757d;
+}
+
+.stat-info h4 {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+    color: #1a2a3a;
+}
+
+.stat-info p {
+    color: #5a6f84;
+    font-size: 0.85rem;
+    margin: 0;
+}

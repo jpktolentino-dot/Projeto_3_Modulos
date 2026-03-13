@@ -75,7 +75,8 @@ class ItemChecklist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     checklist_id = db.Column(db.Integer, db.ForeignKey('checklists.id'))
     descricao = db.Column(db.String(200), nullable=False)
-    concluido = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), default='pendente')  # 'sim', 'nao', 'na', 'pendente'
+    observacao = db.Column(db.String(500))  # Campo para observações do item
     
     checklist = db.relationship('Checklist', backref='itens')
 
@@ -316,6 +317,20 @@ def iniciar_checklist():
     mes_ano = datetime.now().strftime('%m/%Y')
     equipamento_id = dados['equipamento_id']
     
+    # Verificar se já existe checklist para este equipamento no mês
+    checklist_existente = Checklist.query.filter_by(
+        equipamento_id=equipamento_id,
+        operador_id=usuario_id,
+        mes_ano=mes_ano,
+        status='pendente'
+    ).first()
+    
+    if checklist_existente:
+        return jsonify({
+            'success': False, 
+            'message': 'Já existe um checklist em andamento para este equipamento este mês'
+        })
+    
     checklist = Checklist(
         equipamento_id=equipamento_id,
         operador_id=usuario_id,
@@ -336,32 +351,47 @@ def iniciar_checklist():
         for item_padrao in itens_padrao:
             item = ItemChecklist(
                 checklist_id=checklist.id,
-                descricao=f"{item_padrao.sistema} - {item_padrao.descricao}"
+                descricao=f"{item_padrao.sistema} - {item_padrao.descricao}" if item_padrao.sistema else item_padrao.descricao,
+                status='pendente'
             )
             db.session.add(item)
     else:
-        # Itens padrão genéricos para equipamentos sem checklist específico
-        itens_genericos = [
-            'Verificar nível de óleo',
-            'Limpar filtros de ar',
-            'Testar válvula de segurança',
-            'Verificar correias',
-            'Inspecionar conexões elétricas',
-            'Lubrificar partes móveis',
-            'Verificar pressão de trabalho',
-            'Inspecionar vazamentos'
-        ]
-        
-        for item_desc in itens_genericos:
-            item = ItemChecklist(
-                checklist_id=checklist.id,
-                descricao=item_desc
-            )
-            db.session.add(item)
+        # Se não houver itens padrão, criar checklist vazio para preenchimento manual
+        # O usuário poderá adicionar itens manualmente depois
+        pass
     
     db.session.commit()
     
     return jsonify({'success': True, 'checklist_id': checklist.id})
+
+@app.route('/api/checklist/<int:id>/itens', methods=['POST'])
+@login_required
+def adicionar_item_checklist(id):
+    """Adiciona um novo item ao checklist manualmente"""
+    dados = request.get_json()
+    
+    checklist = Checklist.query.get_or_404(id)
+    
+    # Verificar se o checklist pertence ao usuário
+    if checklist.operador_id != session['usuario_id']:
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar se o checklist ainda está pendente
+    if checklist.status != 'pendente':
+        return jsonify({'success': False, 'message': 'Checklist já finalizado'}), 400
+    
+    item = ItemChecklist(
+        checklist_id=id,
+        descricao=dados['descricao'],
+        status='pendente'
+    )
+    
+    db.session.add(item)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'item_id': item.id})
+
+
 
 @app.route('/api/checklist/<int:id>/item/<int:item_id>', methods=['PUT'])
 @login_required
@@ -374,7 +404,42 @@ def atualizar_item_checklist(id, item_id):
         checklist_id=id
     ).first_or_404()
     
-    item.concluido = dados.get('concluido', item.concluido)
+    # Verificar se o checklist pertence ao usuário
+    checklist = Checklist.query.get(id)
+    if checklist.operador_id != session['usuario_id']:
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Atualizar o status (sim, nao, na) ou observação
+    if 'status' in dados:
+        item.status = dados['status']
+    if 'observacao' in dados:
+        item.observacao = dados['observacao']
+    
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/checklist/<int:id>/item/<int:item_id>', methods=['DELETE'])
+@login_required
+def remover_item_checklist(id, item_id):
+    """Remove um item do checklist"""
+    
+    item = ItemChecklist.query.filter_by(
+        id=item_id,
+        checklist_id=id
+    ).first_or_404()
+    
+    # Verificar se o checklist pertence ao usuário
+    checklist = Checklist.query.get(id)
+    if checklist.operador_id != session['usuario_id']:
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar se o checklist ainda está pendente
+    if checklist.status != 'pendente':
+        return jsonify({'success': False, 'message': 'Checklist já finalizado'}), 400
+    
+    db.session.delete(item)
     db.session.commit()
     
     return jsonify({'success': True})
@@ -592,7 +657,7 @@ Extraia APENAS os itens que são pontos de inspeção ou atividades. Retorne APE
 ]"""
 
         completion = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model = "llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "Você é um especialista em extrair tabelas de checklist. Retorne apenas JSON válido."},
                 {"role": "user", "content": prompt}
@@ -678,7 +743,7 @@ def testar_groq():
         
         # Teste simples
         completion = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model = "llama-3.3-70b-versatile",
             messages=[
                 {"role": "user", "content": "Responda apenas com a palavra 'OK' se você estiver funcionando."}
             ],

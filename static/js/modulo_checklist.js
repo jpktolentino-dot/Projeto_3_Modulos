@@ -1,38 +1,88 @@
 // static/js/modulo_checklist.js
 
-// Variáveis globais
+// ==================== VARIÁVEIS GLOBAIS ====================
 let equipamentoAtualId = null;
 let itensExtraidos = [];
 let itemParaExcluir = null;
-let chamadoAtualId = null;
+let checklistAtualId = null;
+let itemObservacaoAtual = { checklistId: null, itemId: null };
+
+// ==================== FUNÇÕES DE INICIALIZAÇÃO ====================
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarComponentes();
+    configurarEventListeners();
+    
+    // Inicializar estatísticas se estiver em um checklist
+    if (document.getElementById('checklist-items-container')) {
+        atualizarEstatisticas();
+    }
+});
+
+function inicializarComponentes() {
+    configurarDragAndDrop();
+    configurarFechamentoModais();
+}
+
+function configurarEventListeners() {
+    // Fechar modais com ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            fecharTodosModais();
+        }
+    });
+}
+
+function configurarFechamentoModais() {
+    // Fechar modais ao clicar fora
+    window.onclick = function(event) {
+        const modais = obterListaModais();
+        modais.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (event.target == modal) {
+                modal.classList.remove('active');
+            }
+        });
+    };
+}
+
+function fecharTodosModais() {
+    const modais = obterListaModais();
+    modais.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    });
+}
+
+function obterListaModais() {
+    return [
+        'modalConfirmacao',
+        'modalGerenciarEquipamentos',
+        'modalEquipamento',
+        'modalItensPadrao',
+        'modalItemPadrao',
+        'modalUploadPDF',
+        'modalProcessarTexto',
+        'modalPreview',
+        'modalAdicionarItem',
+        'modalMultiplasLinhas',
+        'modalObservacao'
+    ];
+}
 
 // ==================== FUNÇÕES DE UPLOAD DE PDF ====================
 
-/**
- * Abre o modal de upload de PDF
- */
 function abrirModalUploadPDF() {
-    const modal = document.getElementById('modalUploadPDF');
-    if (modal) {
-        modal.classList.add('active');
-        resetUploadForm();
-    }
+    document.getElementById('modalUploadPDF').classList.add('active');
+    resetUploadForm();
 }
 
-/**
- * Fecha o modal de upload de PDF
- */
 function fecharModalUploadPDF() {
-    const modal = document.getElementById('modalUploadPDF');
-    if (modal) {
-        modal.classList.remove('active');
-        resetUploadForm();
-    }
+    document.getElementById('modalUploadPDF').classList.remove('active');
+    resetUploadForm();
 }
 
-/**
- * Reseta o formulário de upload
- */
 function resetUploadForm() {
     const form = document.getElementById('formUploadPDF');
     if (form) form.reset();
@@ -50,9 +100,6 @@ function resetUploadForm() {
     if (progressFill) progressFill.style.width = '0%';
 }
 
-/**
- * Manipula a seleção de arquivo
- */
 function handleFileSelect(input) {
     const file = input.files[0];
     if (file) {
@@ -64,10 +111,7 @@ function handleFileSelect(input) {
     }
 }
 
-/**
- * Configura o drag and drop para upload de PDF
- */
-function setupDragAndDrop() {
+function configurarDragAndDrop() {
     const uploadArea = document.getElementById('uploadArea');
     if (!uploadArea) return;
     
@@ -97,9 +141,6 @@ function setupDragAndDrop() {
     });
 }
 
-/**
- * Faz upload e processa o PDF com a API Groq
- */
 async function uploadChecklistPDF(event) {
     event.preventDefault();
     
@@ -112,22 +153,12 @@ async function uploadChecklistPDF(event) {
         return;
     }
     
-    // Validar tamanho do arquivo (16MB max)
     if (file.size > 16 * 1024 * 1024) {
         mostrarToast('Arquivo muito grande. Tamanho máximo: 16MB', 'error');
         return;
     }
     
-    // Mostrar progresso
-    const uploadProgress = document.getElementById('uploadProgress');
-    const btnUpload = document.getElementById('btnUploadPDF');
-    const progressStatus = document.getElementById('progressStatus');
-    const progressFill = document.getElementById('progressFill');
-    
-    if (uploadProgress) uploadProgress.style.display = 'block';
-    if (btnUpload) btnUpload.disabled = true;
-    if (progressStatus) progressStatus.textContent = 'Enviando arquivo...';
-    if (progressFill) progressFill.style.width = '30%';
+    mostrarProgressoUpload();
     
     const formData = new FormData();
     formData.append('file', file);
@@ -139,18 +170,14 @@ async function uploadChecklistPDF(event) {
             body: formData
         });
         
-        if (progressFill) progressFill.style.width = '80%';
-        if (progressStatus) progressStatus.textContent = 'Processando resposta...';
+        atualizarProgresso(80, 'Processando resposta...');
         
         const data = await response.json();
         
-        if (progressFill) progressFill.style.width = '100%';
+        atualizarProgresso(100, '✅ Processado!');
         
         if (data.success) {
-            if (progressStatus) progressStatus.textContent = '✅ PDF processado com sucesso!';
             mostrarToast(data.message, 'success');
-            
-            // Se houver preview dos itens, mostrar
             if (data.itens && data.itens.length > 0) {
                 itensExtraidos = data.itens;
                 mostrarPreviewItens(data.itens, equipamentoId);
@@ -161,23 +188,38 @@ async function uploadChecklistPDF(event) {
                 }, 1500);
             }
         } else {
-            if (progressStatus) progressStatus.textContent = '❌ Erro no processamento';
             mostrarToast(data.message || 'Erro ao processar PDF', 'error');
-            if (btnUpload) btnUpload.disabled = false;
+            document.getElementById('btnUploadPDF').disabled = false;
         }
     } catch (error) {
         console.error('Erro no upload:', error);
-        if (progressStatus) progressStatus.textContent = '❌ Erro de conexão';
         mostrarToast('Erro de conexão: ' + error.message, 'error');
-        if (btnUpload) btnUpload.disabled = false;
+        document.getElementById('btnUploadPDF').disabled = false;
     }
+}
+
+function mostrarProgressoUpload() {
+    const uploadProgress = document.getElementById('uploadProgress');
+    const btnUpload = document.getElementById('btnUploadPDF');
+    const progressStatus = document.getElementById('progressStatus');
+    const progressFill = document.getElementById('progressFill');
+    
+    if (uploadProgress) uploadProgress.style.display = 'block';
+    if (btnUpload) btnUpload.disabled = true;
+    if (progressStatus) progressStatus.textContent = 'Enviando arquivo...';
+    if (progressFill) progressFill.style.width = '30%';
+}
+
+function atualizarProgresso(percentual, mensagem) {
+    const progressStatus = document.getElementById('progressStatus');
+    const progressFill = document.getElementById('progressFill');
+    
+    if (progressFill) progressFill.style.width = percentual + '%';
+    if (progressStatus && mensagem) progressStatus.textContent = mensagem;
 }
 
 // ==================== FUNÇÕES DE PROCESSAMENTO DE TEXTO ====================
 
-/**
- * Abre o modal de processamento de texto
- */
 function abrirModalProcessarTexto() {
     const modal = document.getElementById('modalProcessarTexto');
     if (modal) {
@@ -186,9 +228,6 @@ function abrirModalProcessarTexto() {
     }
 }
 
-/**
- * Fecha o modal de processamento de texto
- */
 function fecharModalProcessarTexto() {
     const modal = document.getElementById('modalProcessarTexto');
     const form = document.getElementById('formProcessarTexto');
@@ -197,9 +236,6 @@ function fecharModalProcessarTexto() {
     if (form) form.reset();
 }
 
-/**
- * Processa texto de checklist manualmente
- */
 async function processarTextoChecklist(event) {
     event.preventDefault();
     
@@ -221,9 +257,7 @@ async function processarTextoChecklist(event) {
     try {
         const response = await fetch('/api/processar-checklist-texto', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 equipamento_id: equipamentoId,
                 texto: texto
@@ -248,9 +282,8 @@ async function processarTextoChecklist(event) {
     }
 }
 
-/**
- * Mostra preview dos itens extraídos
- */
+// ==================== FUNÇÕES DE PREVIEW E IMPORTAÇÃO ====================
+
 function mostrarPreviewItens(itens, equipamentoId) {
     const previewContent = document.getElementById('previewContent');
     const modal = document.getElementById('modalPreview');
@@ -258,20 +291,11 @@ function mostrarPreviewItens(itens, equipamentoId) {
     
     if (!previewContent || !modal) return;
     
-    // Agrupar itens por sistema (se disponível)
-    const itensPorSistema = {};
-    itens.forEach(item => {
-        const sistema = item.sistema || 'Geral';
-        if (!itensPorSistema[sistema]) {
-            itensPorSistema[sistema] = [];
-        }
-        itensPorSistema[sistema].push(item);
-    });
+    const itensPorSistema = agruparItensPorSistema(itens);
     
     let html = '<h4>Itens Encontrados:</h4>';
     html += '<div style="margin-top:15px; max-height: 400px; overflow-y: auto;">';
     
-    // Mostrar estatísticas
     html += `
         <div style="background: #e9eff5; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
             <strong>Total:</strong> ${itens.length} itens | 
@@ -279,34 +303,8 @@ function mostrarPreviewItens(itens, equipamentoId) {
         </div>
     `;
     
-    // Mostrar itens por sistema
     for (const [sistema, itensDoSistema] of Object.entries(itensPorSistema)) {
-        html += `
-            <div style="margin-bottom: 15px;">
-                <h5 style="color: #20643f; margin-bottom: 8px;">
-                    <i class="fas fa-folder"></i> ${sistema} (${itensDoSistema.length})
-                </h5>
-        `;
-        
-        itensDoSistema.forEach((item, index) => {
-            const conformeClass = item.conforme === 'Sim' ? 'badge-success' : 
-                                 item.conforme === 'Não' ? 'badge-error' : 'badge-warning';
-            
-            html += `
-                <div class="preview-item">
-                    <i class="fas fa-check-circle" style="color: #40b049;"></i>
-                    <div style="flex:1;">
-                        <div><strong>${item.ponto_inspecao || item.descricao || 'Item sem descrição'}</strong></div>
-                        <div style="display: flex; gap: 10px; margin-top: 5px;">
-                            <span class="sistema">${item.sistema || 'Geral'}</span>
-                            ${item.conforme ? `<span class="${conformeClass}">${item.conforme}</span>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
+        html += gerarHtmlSistemaPreview(sistema, itensDoSistema);
     }
     
     html += '</div>';
@@ -318,24 +316,63 @@ function mostrarPreviewItens(itens, equipamentoId) {
     previewContent.innerHTML = html;
     modal.classList.add('active');
     
-    // Configurar botão de confirmação
+    configurarBotaoConfirmarImportacao(equipamentoId);
+}
+
+function agruparItensPorSistema(itens) {
+    const itensPorSistema = {};
+    itens.forEach(item => {
+        const sistema = item.sistema || 'Geral';
+        if (!itensPorSistema[sistema]) {
+            itensPorSistema[sistema] = [];
+        }
+        itensPorSistema[sistema].push(item);
+    });
+    return itensPorSistema;
+}
+
+function gerarHtmlSistemaPreview(sistema, itens) {
+    let html = `
+        <div style="margin-bottom: 15px;">
+            <h5 style="color: #20643f; margin-bottom: 8px;">
+                <i class="fas fa-folder"></i> ${sistema} (${itens.length})
+            </h5>
+    `;
+    
+    itens.forEach((item, index) => {
+        const conformeClass = item.conforme === 'Sim' ? 'badge-success' : 
+                             item.conforme === 'Não' ? 'badge-error' : 'badge-warning';
+        
+        html += `
+            <div class="preview-item">
+                <i class="fas fa-check-circle" style="color: #40b049;"></i>
+                <div style="flex:1;">
+                    <div><strong>${item.ponto_inspecao || item.descricao || 'Item sem descrição'}</strong></div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <span class="sistema">${item.sistema || 'Geral'}</span>
+                        ${item.conforme ? `<span class="${conformeClass}">${item.conforme}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+function configurarBotaoConfirmarImportacao(equipamentoId) {
     const btnConfirmar = document.getElementById('btnConfirmarImportacao');
     if (btnConfirmar) {
         btnConfirmar.onclick = () => confirmarImportacao(equipamentoId);
     }
 }
 
-/**
- * Fecha o modal de preview
- */
 function fecharModalPreview() {
     const modal = document.getElementById('modalPreview');
     if (modal) modal.classList.remove('active');
 }
 
-/**
- * Confirma a importação dos itens extraídos
- */
 async function confirmarImportacao(equipamentoId) {
     if (!itensExtraidos || itensExtraidos.length === 0) {
         mostrarToast('Nenhum item para importar', 'warning');
@@ -348,17 +385,14 @@ async function confirmarImportacao(equipamentoId) {
         let itensImportados = 0;
         let itensComErro = 0;
         
-        // Para cada item extraído, adicionar ao banco
         for (const item of itensExtraidos) {
+            const descricao = item.ponto_inspecao || item.descricao;
+            if (!descricao) continue;
+            
             try {
-                const descricao = item.ponto_inspecao || item.descricao;
-                if (!descricao) continue;
-                
                 const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         sistema: item.sistema || 'Geral',
                         descricao: descricao,
@@ -386,10 +420,7 @@ async function confirmarImportacao(equipamentoId) {
             mostrarToast(`⚠️ ${itensImportados} importados, ${itensComErro} falhas`, 'warning');
         }
         
-        // Recarregar a página após 1.5 segundos
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500);
+        setTimeout(() => window.location.reload(), 1500);
         
     } catch (error) {
         console.error('Erro na importação:', error);
@@ -401,9 +432,6 @@ async function confirmarImportacao(equipamentoId) {
 
 // ==================== FUNÇÕES DE TESTE DA API GROQ ====================
 
-/**
- * Testa a conexão com a API Groq
- */
 async function testarGroqAPI() {
     showLoading();
     
@@ -425,124 +453,18 @@ async function testarGroqAPI() {
     }
 }
 
-// ==================== FUNÇÕES DE TOAST ====================
-
-/**
- * Mostra uma notificação toast
- */
-function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
-    // Verificar se já existe um container de toast
-    let container = document.getElementById('toastContainer');
-    
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 350px;
-        `;
-        document.body.appendChild(container);
-    }
-    
-    const toast = document.createElement('div');
-    
-    // Definir cor baseada no tipo
-    let bgColor, icon, iconColor;
-    switch (tipo) {
-        case 'success':
-            bgColor = '#d4edda';
-            icon = 'fa-check-circle';
-            iconColor = '#28a745';
-            break;
-        case 'error':
-            bgColor = '#f8d7da';
-            icon = 'fa-exclamation-circle';
-            iconColor = '#dc3545';
-            break;
-        case 'warning':
-            bgColor = '#fff3cd';
-            icon = 'fa-exclamation-triangle';
-            iconColor = '#ffc107';
-            break;
-        default:
-            bgColor = '#d1ecf1';
-            icon = 'fa-info-circle';
-            iconColor = '#17a2b8';
-    }
-    
-    toast.style.cssText = `
-        background: ${bgColor};
-        color: ${tipo === 'warning' ? '#856404' : '#155724'};
-        padding: 16px 20px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        border-left: 4px solid ${iconColor};
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        animation: slideIn 0.3s ease;
-        cursor: pointer;
-        font-size: 0.95rem;
-    `;
-    
-    toast.innerHTML = `
-        <i class="fas ${icon}" style="color: ${iconColor}; font-size: 1.2rem;"></i>
-        <div style="flex: 1;">${mensagem}</div>
-    `;
-    
-    toast.onclick = () => toast.remove();
-    
-    container.appendChild(toast);
-    
-    // Adicionar animação
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, duracao);
-}
-
 // ==================== FUNÇÕES DE GERENCIAMENTO DE EQUIPAMENTOS ====================
 
-/**
- * Abre o modal de gerenciamento de equipamentos
- */
 function abrirModalGerenciarEquipamentos() {
     const modal = document.getElementById('modalGerenciarEquipamentos');
     if (modal) modal.classList.add('active');
 }
 
-/**
- * Fecha o modal de gerenciamento de equipamentos
- */
 function fecharModalGerenciarEquipamentos() {
     const modal = document.getElementById('modalGerenciarEquipamentos');
     if (modal) modal.classList.remove('active');
 }
 
-/**
- * Abre o modal de cadastro de equipamento
- */
 function abrirModalCadastroEquipamento() {
     const modalTitulo = document.getElementById('modalEquipamentoTitulo');
     const equipamentoId = document.getElementById('equipamentoId');
@@ -557,17 +479,11 @@ function abrirModalCadastroEquipamento() {
     fecharModalGerenciarEquipamentos();
 }
 
-/**
- * Fecha o modal de equipamento
- */
 function fecharModalEquipamento() {
     const modal = document.getElementById('modalEquipamento');
     if (modal) modal.classList.remove('active');
 }
 
-/**
- * Edita um equipamento existente
- */
 async function editarEquipamento(id) {
     try {
         const response = await fetch('/api/equipamentos');
@@ -581,14 +497,9 @@ async function editarEquipamento(id) {
             document.getElementById('equipamentoModelo').value = equipamento.modelo || '';
             document.getElementById('equipamentoFabricante').value = equipamento.fabricante || '';
             
-            const tipoSelect = document.getElementById('equipamentoTipo');
-            if (tipoSelect) {
-                for (let i = 0; i < tipoSelect.options.length; i++) {
-                    if (tipoSelect.options[i].value === equipamento.tipo) {
-                        tipoSelect.selectedIndex = i;
-                        break;
-                    }
-                }
+            const tipoInput = document.getElementById('equipamentoTipo');
+            if (tipoInput) {
+                tipoInput.value = equipamento.tipo || '';
             }
             
             document.getElementById('equipamentoManual').value = equipamento.manual_pdf || '';
@@ -601,9 +512,6 @@ async function editarEquipamento(id) {
     }
 }
 
-/**
- * Salva um equipamento (cria ou atualiza)
- */
 async function salvarEquipamento(event) {
     event.preventDefault();
     
@@ -655,9 +563,6 @@ async function salvarEquipamento(event) {
     }
 }
 
-/**
- * Confirma exclusão de equipamento
- */
 function confirmarExcluirEquipamento(id, nome) {
     mostrarConfirmacao(
         'Excluir Equipamento',
@@ -687,9 +592,6 @@ function confirmarExcluirEquipamento(id, nome) {
 
 // ==================== FUNÇÕES DE ITENS PADRÃO ====================
 
-/**
- * Gerencia os itens padrão de um equipamento
- */
 async function gerenciarItensPadrao(equipamentoId, equipamentoNome) {
     equipamentoAtualId = equipamentoId;
     
@@ -707,9 +609,6 @@ async function gerenciarItensPadrao(equipamentoId, equipamentoNome) {
     fecharModalGerenciarEquipamentos();
 }
 
-/**
- * Carrega os itens padrão de um equipamento
- */
 async function carregarItensPadrao(equipamentoId) {
     try {
         const response = await fetch(`/api/equipamentos/${equipamentoId}/itens-padrao`);
@@ -726,17 +625,17 @@ async function carregarItensPadrao(equipamentoId) {
         let html = '';
         itens.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).forEach(item => {
             html += `
-                <div class="item-padrao" style="background: #f9fbfd; border: 1px solid #e0e5ec; border-radius: 4px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
-                    <div class="item-padrao-info" style="flex: 1;">
-                        <div class="item-padrao-sistema" style="font-size: 0.85rem; color: #40b049; font-weight: 600; margin-bottom: 4px;">${item.sistema || 'Geral'}</div>
-                        <div class="item-padrao-descricao" style="font-size: 0.95rem;">${item.descricao}</div>
-                        <div class="item-padrao-ordem" style="font-size: 0.8rem; color: #5a6f84;">Ordem: ${item.ordem || 0}</div>
+                <div class="item-padrao">
+                    <div class="item-padrao-info">
+                        <div class="item-padrao-sistema">${item.sistema || 'Geral'}</div>
+                        <div class="item-padrao-descricao">${item.descricao}</div>
+                        <div class="item-padrao-ordem">Ordem: ${item.ordem || 0}</div>
                     </div>
-                    <div class="equipamento-actions" style="display: flex; gap: 8px;">
-                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema?.replace(/'/g, "\\'") || ''}', '${item.descricao.replace(/'/g, "\\'")}', ${item.ordem || 0})" title="Editar" style="background: none; border: none; width: 36px; height: 36px; border-radius: 4px; cursor: pointer; color: #5a6f84;">
+                    <div class="equipamento-actions">
+                        <button class="action-btn edit" onclick="editarItemPadrao(${item.id}, '${item.sistema?.replace(/'/g, "\\'") || ''}', '${item.descricao.replace(/'/g, "\\'")}', ${item.ordem || 0})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete" onclick="confirmarExcluirItemPadrao(${item.id})" title="Excluir" style="background: none; border: none; width: 36px; height: 36px; border-radius: 4px; cursor: pointer; color: #5a6f84;">
+                        <button class="action-btn delete" onclick="confirmarExcluirItemPadrao(${item.id})" title="Excluir">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -751,18 +650,12 @@ async function carregarItensPadrao(equipamentoId) {
     }
 }
 
-/**
- * Fecha o modal de itens padrão
- */
 function fecharModalItensPadrao() {
     const modal = document.getElementById('modalItensPadrao');
     if (modal) modal.classList.remove('active');
     equipamentoAtualId = null;
 }
 
-/**
- * Abre o modal de cadastro de item padrão
- */
 function abrirModalItemPadrao() {
     const modalTitulo = document.getElementById('modalItemTitulo');
     const itemId = document.getElementById('itemPadraoId');
@@ -775,17 +668,11 @@ function abrirModalItemPadrao() {
     if (modal) modal.classList.add('active');
 }
 
-/**
- * Fecha o modal de item padrão
- */
 function fecharModalItemPadrao() {
     const modal = document.getElementById('modalItemPadrao');
     if (modal) modal.classList.remove('active');
 }
 
-/**
- * Edita um item padrão
- */
 function editarItemPadrao(id, sistema, descricao, ordem) {
     document.getElementById('modalItemTitulo').textContent = 'Editar Item';
     document.getElementById('itemPadraoId').value = id;
@@ -795,9 +682,6 @@ function editarItemPadrao(id, sistema, descricao, ordem) {
     document.getElementById('modalItemPadrao').classList.add('active');
 }
 
-/**
- * Salva um item padrão
- */
 async function salvarItemPadrao(event) {
     event.preventDefault();
     
@@ -824,7 +708,6 @@ async function salvarItemPadrao(event) {
     try {
         let response;
         if (id) {
-            // Implementar edição quando necessário
             mostrarToast('Edição de item será implementada em breve', 'warning');
             hideLoading();
             return;
@@ -854,9 +737,6 @@ async function salvarItemPadrao(event) {
     }
 }
 
-/**
- * Confirma exclusão de item padrão
- */
 function confirmarExcluirItemPadrao(id) {
     itemParaExcluir = id;
     mostrarConfirmacao(
@@ -888,9 +768,6 @@ function confirmarExcluirItemPadrao(id) {
 
 // ==================== FUNÇÕES DO CHECKLIST ====================
 
-/**
- * Inicia um novo checklist
- */
 function iniciarChecklist(equipamentoId) {
     if (!equipamentoId) {
         mostrarToast('Selecione um equipamento', 'warning');
@@ -901,9 +778,7 @@ function iniciarChecklist(equipamentoId) {
 
     fetch('/api/checklist/iniciar', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ equipamento_id: equipamentoId })
     })
     .then(response => response.json())
@@ -922,16 +797,11 @@ function iniciarChecklist(equipamentoId) {
     });
 }
 
-/**
- * Atualiza um item do checklist
- */
 async function atualizarItem(checklistId, itemId, concluido) {
     try {
         const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ concluido: concluido })
         });
 
@@ -946,24 +816,343 @@ async function atualizarItem(checklistId, itemId, concluido) {
     }
 }
 
-/**
- * Finaliza um checklist
- */
+// ==================== NOVAS FUNÇÕES PARA O CHECKLIST ====================
+
+// Atualizar estatísticas do checklist
+function atualizarEstatisticas() {
+    const linhas = document.querySelectorAll('.checklist-row');
+    let totalSim = 0, totalNao = 0, totalNA = 0;
+    
+    linhas.forEach(linha => {
+        const statusSim = linha.querySelector('.status-option.sim.active');
+        const statusNao = linha.querySelector('.status-option.nao.active');
+        const statusNA = linha.querySelector('.status-option.na.active');
+        
+        if (statusSim) totalSim++;
+        if (statusNao) totalNao++;
+        if (statusNA) totalNA++;
+    });
+    
+    const totalSimElement = document.getElementById('totalSim');
+    const totalNaoElement = document.getElementById('totalNao');
+    const totalNAElement = document.getElementById('totalNA');
+    
+    if (totalSimElement) totalSimElement.textContent = totalSim;
+    if (totalNaoElement) totalNaoElement.textContent = totalNao;
+    if (totalNAElement) totalNAElement.textContent = totalNA;
+}
+
+// Atualizar status de um item
+async function atualizarStatusItem(checklistId, itemId, status) {
+    try {
+        const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Atualizar UI
+            const linha = document.querySelector(`.checklist-row[data-item-id="${itemId}"]`);
+            if (linha) {
+                // Remover classe active de todos os botões de status
+                linha.querySelectorAll('.status-option').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Adicionar classe active ao botão clicado
+                const botoes = linha.querySelectorAll('.status-option');
+                if (status === 'sim') botoes[0].classList.add('active');
+                if (status === 'nao') botoes[1].classList.add('active');
+                if (status === 'na') botoes[2].classList.add('active');
+            }
+            
+            atualizarEstatisticas();
+        } else {
+            mostrarToast('Erro ao atualizar item', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarToast('Erro de conexão', 'error');
+    }
+}
+
+// Abrir modal para adicionar observação
+function abrirModalObservacao(checklistId, itemId, observacaoAtual) {
+    itemObservacaoAtual = { checklistId, itemId };
+    document.getElementById('observacaoChecklistId').value = checklistId;
+    document.getElementById('observacaoItemId').value = itemId;
+    document.getElementById('observacaoTexto').value = observacaoAtual || '';
+    document.getElementById('modalObservacao').classList.add('active');
+}
+
+// Fechar modal de observação
+function fecharModalObservacao() {
+    document.getElementById('modalObservacao').classList.remove('active');
+    itemObservacaoAtual = { checklistId: null, itemId: null };
+}
+
+// Salvar observação do item
+async function salvarObservacao() {
+    const { checklistId, itemId } = itemObservacaoAtual;
+    const observacao = document.getElementById('observacaoTexto').value;
+    
+    if (!checklistId || !itemId) return;
+    
+    try {
+        const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ observacao: observacao })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('Observação salva!', 'success');
+            fecharModalObservacao();
+            
+            // Atualizar UI
+            const linha = document.querySelector(`.checklist-row[data-item-id="${itemId}"] .checklist-descricao`);
+            if (linha) {
+                // Remover observação antiga se existir
+                const obsAntiga = linha.querySelector('small');
+                if (obsAntiga) obsAntiga.remove();
+                
+                // Adicionar nova observação se não estiver vazia
+                if (observacao) {
+                    const obsElement = document.createElement('small');
+                    obsElement.innerHTML = `<i class="fas fa-comment"></i> ${observacao}`;
+                    linha.appendChild(obsElement);
+                }
+            }
+        } else {
+            mostrarToast('Erro ao salvar observação', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarToast('Erro de conexão', 'error');
+    }
+}
+
+// Abrir modal para adicionar item
+function abrirModalAdicionarItem() {
+    document.getElementById('modalAdicionarItem').classList.add('active');
+}
+
+// Fechar modal de adicionar item
+function fecharModalAdicionarItem() {
+    document.getElementById('modalAdicionarItem').classList.remove('active');
+    document.getElementById('novoItemDescricao').value = '';
+}
+
+// Adicionar item ao checklist
+async function adicionarItemChecklist() {
+    const descricao = document.getElementById('novoItemDescricao').value;
+    const checklistId = obterChecklistIdAtual();
+    
+    if (!descricao) {
+        mostrarToast('Digite a descrição do item', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/api/checklist/${checklistId}/itens`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descricao: descricao })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('Item adicionado!', 'success');
+            fecharModalAdicionarItem();
+            
+            // Adicionar item à UI
+            adicionarItemNaUI(checklistId, data.item_id, descricao);
+        } else {
+            mostrarToast('Erro ao adicionar item', 'error');
+            hideLoading();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarToast('Erro de conexão', 'error');
+        hideLoading();
+    }
+}
+
+// Adicionar item à interface
+function adicionarItemNaUI(checklistId, itemId, descricao) {
+    const container = document.getElementById('checklist-items-container');
+    
+    const novaLinha = document.createElement('div');
+    novaLinha.className = 'checklist-row';
+    novaLinha.setAttribute('data-item-id', itemId);
+    
+    novaLinha.innerHTML = `
+        <div class="checklist-descricao">
+            ${descricao}
+        </div>
+        <div class="checklist-status-group">
+            <button class="status-option sim" onclick="atualizarStatusItem(${checklistId}, ${itemId}, 'sim')">SIM</button>
+            <button class="status-option nao" onclick="atualizarStatusItem(${checklistId}, ${itemId}, 'nao')">NÃO</button>
+            <button class="status-option na" onclick="atualizarStatusItem(${checklistId}, ${itemId}, 'na')">N/A</button>
+        </div>
+        <div class="checklist-actions">
+            <button class="edit" onclick="abrirModalObservacao(${checklistId}, ${itemId}, '')" title="Adicionar observação">
+                <i class="fas fa-comment"></i>
+            </button>
+            <button class="delete" onclick="removerItemChecklist(${checklistId}, ${itemId})" title="Remover item">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(novaLinha);
+    
+    // Atualizar contagem total
+    const totalItens = document.querySelectorAll('.checklist-row').length;
+    const totalElement = document.querySelector('.stat-card.total .stat-info h4');
+    if (totalElement) totalElement.textContent = totalItens;
+    
+    hideLoading();
+}
+
+// Remover item do checklist
+async function removerItemChecklist(checklistId, itemId) {
+    mostrarConfirmacao(
+        'Remover Item',
+        'Tem certeza que deseja remover este item do checklist?',
+        async () => {
+            showLoading();
+            
+            try {
+                const response = await fetch(`/api/checklist/${checklistId}/item/${itemId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarToast('Item removido!', 'success');
+                    
+                    // Remover da UI
+                    const linha = document.querySelector(`.checklist-row[data-item-id="${itemId}"]`);
+                    if (linha) linha.remove();
+                    
+                    // Atualizar contagem e estatísticas
+                    const totalItens = document.querySelectorAll('.checklist-row').length;
+                    const totalElement = document.querySelector('.stat-card.total .stat-info h4');
+                    if (totalElement) totalElement.textContent = totalItens;
+                    
+                    atualizarEstatisticas();
+                } else {
+                    mostrarToast('Erro ao remover item', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarToast('Erro de conexão', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+    );
+}
+
+// Obter ID do checklist atual da URL
+function obterChecklistIdAtual() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('checklist_id');
+}
+
+// Adicionar múltiplas linhas em branco
+function adicionarLinhasEmBranco() {
+    const qtd = parseInt(document.getElementById('qtdLinhas')?.value) || 5;
+    abrirModalMultiplasLinhas(qtd);
+}
+
+// Abrir modal para adicionar múltiplas linhas
+function abrirModalMultiplasLinhas(qtdSugerida) {
+    document.getElementById('qtdMultiplasLinhas').value = qtdSugerida || 5;
+    document.getElementById('prefixoLinhas').value = '';
+    document.getElementById('modalMultiplasLinhas').classList.add('active');
+}
+
+// Fechar modal de múltiplas linhas
+function fecharModalMultiplasLinhas() {
+    document.getElementById('modalMultiplasLinhas').classList.remove('active');
+}
+
+// Adicionar múltiplas linhas
+async function adicionarMultiplasLinhas() {
+    const qtd = parseInt(document.getElementById('qtdMultiplasLinhas').value);
+    const prefixo = document.getElementById('prefixoLinhas').value;
+    const checklistId = obterChecklistIdAtual();
+    
+    if (qtd < 1 || qtd > 20) {
+        mostrarToast('Quantidade deve ser entre 1 e 20', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        let sucessos = 0;
+        
+        for (let i = 1; i <= qtd; i++) {
+            const descricao = prefixo ? `${prefixo} ${i}` : `Item ${i}`;
+            
+            const response = await fetch(`/api/checklist/${checklistId}/itens`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ descricao: descricao })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                sucessos++;
+                adicionarItemNaUI(checklistId, data.item_id, descricao);
+            }
+        }
+        
+        mostrarToast(`${sucessos} de ${qtd} itens adicionados!`, sucessos === qtd ? 'success' : 'warning');
+        fecharModalMultiplasLinhas();
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarToast('Erro de conexão', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Sobrescrever a função finalizarChecklist para incluir estatísticas
 function finalizarChecklist(checklistId) {
     const observacoes = document.getElementById('observacoes')?.value || '';
     
+    // Calcular estatísticas para mostrar no relatório
+    const totalSim = document.getElementById('totalSim')?.textContent || '0';
+    const totalNao = document.getElementById('totalNao')?.textContent || '0';
+    const totalNA = document.getElementById('totalNA')?.textContent || '0';
+    const totalItens = document.querySelectorAll('.checklist-row').length;
+    
+    const mensagemConfirmacao = `Total de itens: ${totalItens}\n✓ Conforme: ${totalSim}\n✗ Não conforme: ${totalNao}\n- Não aplicável: ${totalNA}\n\nTem certeza que deseja finalizar este checklist?`;
+    
     mostrarConfirmacao(
         'Concluir Checklist',
-        'Tem certeza que deseja finalizar este checklist? O relatório será enviado ao PCM.',
+        mensagemConfirmacao,
         async () => {
             showLoading();
             
             try {
                 const response = await fetch(`/api/checklist/${checklistId}/finalizar`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ observacoes: observacoes })
                 });
 
@@ -985,17 +1174,12 @@ function finalizarChecklist(checklistId) {
     );
 }
 
-/**
- * Visualiza relatório do checklist
- */
+// Função original para visualizar relatório
 function visualizarRelatorio(checklistId) {
-    // Em produção, abriria um PDF ou página com o relatório
-    mostrarToast('Relatório do checklist #' + checklistId + '\nEm produção, isso abriria o PDF do relatório.', 'info');
+    mostrarToast('Relatório do checklist #' + checklistId, 'info');
 }
 
-/**
- * Confirma exclusão de checklist
- */
+// Função para confirmar exclusão de checklist
 function confirmarExcluirChecklist(id, equipamentoNome) {
     mostrarConfirmacao(
         'Excluir Checklist',
@@ -1023,35 +1207,132 @@ function confirmarExcluirChecklist(id, equipamentoNome) {
     );
 }
 
+// ==================== FUNÇÕES DE TOAST ====================
+
+function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
+    let container = document.getElementById('toastContainer');
+    
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    const config = obterConfigToast(tipo);
+    
+    toast.style.cssText = `
+        background: ${config.bgColor};
+        color: ${config.textColor};
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        border-left: 4px solid ${config.iconColor};
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+        cursor: pointer;
+        font-size: 0.95rem;
+    `;
+    
+    toast.innerHTML = `
+        <i class="fas ${config.icon}" style="color: ${config.iconColor}; font-size: 1.2rem;"></i>
+        <div style="flex: 1;">${mensagem}</div>
+    `;
+    
+    toast.onclick = () => toast.remove();
+    
+    container.appendChild(toast);
+    
+    adicionarAnimacaoCSS();
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, duracao);
+}
+
+function obterConfigToast(tipo) {
+    switch (tipo) {
+        case 'success':
+            return {
+                bgColor: '#d4edda',
+                textColor: '#155724',
+                icon: 'fa-check-circle',
+                iconColor: '#28a745'
+            };
+        case 'error':
+            return {
+                bgColor: '#f8d7da',
+                textColor: '#721c24',
+                icon: 'fa-exclamation-circle',
+                iconColor: '#dc3545'
+            };
+        case 'warning':
+            return {
+                bgColor: '#fff3cd',
+                textColor: '#856404',
+                icon: 'fa-exclamation-triangle',
+                iconColor: '#ffc107'
+            };
+        default:
+            return {
+                bgColor: '#d1ecf1',
+                textColor: '#0c5460',
+                icon: 'fa-info-circle',
+                iconColor: '#17a2b8'
+            };
+    }
+}
+
+function adicionarAnimacaoCSS() {
+    if (!document.getElementById('toastAnimation')) {
+        const style = document.createElement('style');
+        style.id = 'toastAnimation';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
 // ==================== FUNÇÕES UTILITÁRIAS ====================
 
-/**
- * Mostra o loading
- */
 function showLoading() {
     const loading = document.getElementById('loading');
     if (loading) loading.classList.add('active');
 }
 
-/**
- * Esconde o loading
- */
 function hideLoading() {
     const loading = document.getElementById('loading');
     if (loading) loading.classList.remove('active');
 }
 
-/**
- * Fecha o modal de confirmação
- */
 function fecharModalConfirmacao() {
     const modal = document.getElementById('modalConfirmacao');
     if (modal) modal.classList.remove('active');
 }
 
-/**
- * Mostra modal de confirmação
- */
 function mostrarConfirmacao(titulo, mensagem, callback) {
     const modal = document.getElementById('modalConfirmacao');
     const modalMensagem = document.getElementById('modalMensagem');
@@ -1071,56 +1352,50 @@ function mostrarConfirmacao(titulo, mensagem, callback) {
     if (modal) modal.classList.add('active');
 }
 
-// ==================== INICIALIZAÇÃO ====================
+// ==================== EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL ====================
 
-/**
- * Inicializa a página
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // Configurar drag and drop para upload de PDF
-    setupDragAndDrop();
-    
-    // Adicionar listener para fechar modais com ESC
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            const modais = [
-                'modalConfirmacao',
-                'modalGerenciarEquipamentos',
-                'modalEquipamento',
-                'modalItensPadrao',
-                'modalItemPadrao',
-                'modalUploadPDF',
-                'modalProcessarTexto',
-                'modalPreview'
-            ];
-            
-            modais.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && modal.classList.contains('active')) {
-                    modal.classList.remove('active');
-                }
-            });
-        }
-    });
-});
+window.abrirModalUploadPDF = abrirModalUploadPDF;
+window.fecharModalUploadPDF = fecharModalUploadPDF;
+window.handleFileSelect = handleFileSelect;
+window.uploadChecklistPDF = uploadChecklistPDF;
+window.abrirModalProcessarTexto = abrirModalProcessarTexto;
+window.fecharModalProcessarTexto = fecharModalProcessarTexto;
+window.processarTextoChecklist = processarTextoChecklist;
+window.fecharModalPreview = fecharModalPreview;
+window.testarGroqAPI = testarGroqAPI;
+window.abrirModalGerenciarEquipamentos = abrirModalGerenciarEquipamentos;
+window.fecharModalGerenciarEquipamentos = fecharModalGerenciarEquipamentos;
+window.abrirModalCadastroEquipamento = abrirModalCadastroEquipamento;
+window.fecharModalEquipamento = fecharModalEquipamento;
+window.editarEquipamento = editarEquipamento;
+window.salvarEquipamento = salvarEquipamento;
+window.confirmarExcluirEquipamento = confirmarExcluirEquipamento;
+window.gerenciarItensPadrao = gerenciarItensPadrao;
+window.fecharModalItensPadrao = fecharModalItensPadrao;
+window.abrirModalItemPadrao = abrirModalItemPadrao;
+window.fecharModalItemPadrao = fecharModalItemPadrao;
+window.editarItemPadrao = editarItemPadrao;
+window.salvarItemPadrao = salvarItemPadrao;
+window.confirmarExcluirItemPadrao = confirmarExcluirItemPadrao;
+window.iniciarChecklist = iniciarChecklist;
+window.atualizarItem = atualizarItem;
+window.visualizarRelatorio = visualizarRelatorio;
+window.confirmarExcluirChecklist = confirmarExcluirChecklist;
+window.fecharModalConfirmacao = fecharModalConfirmacao;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
 
-// Fechar modais ao clicar fora
-window.onclick = function(event) {
-    const modais = [
-        'modalConfirmacao',
-        'modalGerenciarEquipamentos',
-        'modalEquipamento',
-        'modalItensPadrao',
-        'modalItemPadrao',
-        'modalUploadPDF',
-        'modalProcessarTexto',
-        'modalPreview'
-    ];
-    
-    modais.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (event.target == modal) {
-            modal.classList.remove('active');
-        }
-    });
-};
+// NOVAS FUNÇÕES EXPORTADAS
+window.atualizarStatusItem = atualizarStatusItem;
+window.abrirModalObservacao = abrirModalObservacao;
+window.fecharModalObservacao = fecharModalObservacao;
+window.salvarObservacao = salvarObservacao;
+window.abrirModalAdicionarItem = abrirModalAdicionarItem;
+window.fecharModalAdicionarItem = fecharModalAdicionarItem;
+window.adicionarItemChecklist = adicionarItemChecklist;
+window.removerItemChecklist = removerItemChecklist;
+window.adicionarLinhasEmBranco = adicionarLinhasEmBranco;
+window.abrirModalMultiplasLinhas = abrirModalMultiplasLinhas;
+window.fecharModalMultiplasLinhas = fecharModalMultiplasLinhas;
+window.adicionarMultiplasLinhas = adicionarMultiplasLinhas;
+window.finalizarChecklist = finalizarChecklist;
