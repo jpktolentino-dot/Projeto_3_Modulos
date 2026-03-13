@@ -301,18 +301,30 @@
             <button class="close-btn" onclick="fecharModalGerenciarEquipamentos()">&times;</button>
         </div>
         
+        <!-- Área de botões com as 4 opções -->
         <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <!-- Botão 1: Cadastro Manual -->
             <button class="btn" style="width: auto; padding: 8px 16px; background: #40b049;" onclick="abrirModalCadastroEquipamento()">
                 <i class="fas fa-plus"></i> Novo Equipamento
             </button>
+            
+            <!-- Botão 2: NOVO - Importar com IA -->
+            <button class="btn" style="width: auto; padding: 8px 16px; background: #20643f;" onclick="abrirModalUploadEquipamentoPDF()">
+                <i class="fas fa-file-pdf"></i> Importar Equipamento de PDF
+            </button>
+            
+            <!-- Botão 3: Importar Checklist -->
             <button class="btn" style="width: auto; padding: 8px 16px; background: #dc3545;" onclick="abrirModalUploadPDF()">
                 <i class="fas fa-file-pdf"></i> Importar Checklist de PDF
             </button>
+            
+            <!-- Botão 4: Testar API -->
             <button class="btn btn-outline" style="width: auto; padding: 8px 16px;" onclick="testarGroqAPI()">
                 <i class="fas fa-robot"></i> Testar API Groq
             </button>
         </div>
         
+        <!-- Lista de equipamentos (mantenha como está) -->
         <div style="max-height: 400px; overflow-y: auto;">
             {% for equipamento in equipamentos %}
             <div class="equipamento-card" style="margin-bottom: 10px;">
@@ -429,6 +441,55 @@
                 <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalUploadPDF()">Cancelar</button>
                 <button type="submit" class="btn" style="flex:1; background:#40b049;" id="btnUploadPDF">
                     <i class="fas fa-upload"></i> Upload e Processar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Upload de PDF para Novo Equipamento -->
+<div class="modal" id="modalUploadEquipamentoPDF">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-pdf" style="color: #dc3545;"></i> Importar Equipamento de PDF</h3>
+            <button class="close-btn" onclick="fecharModalUploadEquipamentoPDF()">&times;</button>
+        </div>
+        
+        <div class="info-box" style="background: #e9eff5; border-left: 4px solid #20643f;">
+            <i class="fas fa-robot" style="color: #20643f;"></i>
+            <strong>IA vai extrair:</strong> O sistema usará IA para identificar automaticamente o nome do equipamento, modelo, fabricante e todos os itens do checklist.
+        </div>
+        
+        <form id="formUploadEquipamentoPDF" onsubmit="uploadEquipamentoPDF(event)">
+            <div class="form-group">
+                <label>Arquivo PDF do Equipamento *</label>
+                <div class="upload-area" id="uploadEquipamentoArea" onclick="document.getElementById('equipamentoPdfFile').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Clique para selecionar o PDF do equipamento</p>
+                    <small>Arquivos .pdf até 16MB</small>
+                </div>
+                <input type="file" id="equipamentoPdfFile" accept=".pdf" style="display: none;" onchange="handleEquipamentoFileSelect(this)">
+                <div id="equipamentoFileInfo" style="display: none; margin-top: 10px; padding: 10px; background: #e9eff5; border-radius: 4px;">
+                    <i class="fas fa-file-pdf" style="color: #dc3545;"></i> <span id="equipamentoFileName"></span>
+                </div>
+            </div>
+            
+            <div id="uploadEquipamentoProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="equipamentoProgressFill" style="width: 0%;"></div>
+                </div>
+                <p style="text-align: center; color: #5a6f84;" id="equipamentoProgressStatus">Processando PDF com IA...</p>
+            </div>
+            
+            <div id="equipamentoPreviewArea" style="display: none; margin: 20px 0; max-height: 300px; overflow-y: auto; background: #f9fbfd; padding: 15px; border-radius: 4px;">
+                <h4 style="color: #20643f; margin-bottom: 10px;">📋 Dados Extraídos:</h4>
+                <div id="equipamentoPreviewContent"></div>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalUploadEquipamentoPDF()">Cancelar</button>
+                <button type="submit" class="btn" style="flex:1; background:#40b049;" id="btnUploadEquipamentoPDF">
+                    <i class="fas fa-upload"></i> Processar e Criar
                 </button>
             </div>
         </form>

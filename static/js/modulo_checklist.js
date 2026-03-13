@@ -1352,6 +1352,158 @@ function mostrarConfirmacao(titulo, mensagem, callback) {
     if (modal) modal.classList.add('active');
 }
 
+// ==================== FUNÇÕES PARA UPLOAD DE EQUIPAMENTO ====================
+
+function abrirModalUploadEquipamentoPDF() {
+    document.getElementById('modalUploadEquipamentoPDF').classList.add('active');
+    resetUploadEquipamentoForm();
+}
+
+function fecharModalUploadEquipamentoPDF() {
+    document.getElementById('modalUploadEquipamentoPDF').classList.remove('active');
+    resetUploadEquipamentoForm();
+}
+
+function resetUploadEquipamentoForm() {
+    const form = document.getElementById('formUploadEquipamentoPDF');
+    if (form) form.reset();
+    
+    document.getElementById('uploadEquipamentoProgress').style.display = 'none';
+    document.getElementById('equipamentoPreviewArea').style.display = 'none';
+    document.getElementById('equipamentoFileInfo').style.display = 'none';
+    document.getElementById('btnUploadEquipamentoPDF').disabled = false;
+    document.getElementById('equipamentoProgressFill').style.width = '0%';
+}
+
+function handleEquipamentoFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('equipamentoFileName').textContent = file.name;
+        document.getElementById('equipamentoFileInfo').style.display = 'block';
+    }
+}
+
+async function uploadEquipamentoPDF(event) {
+    event.preventDefault();
+    
+    const fileInput = document.getElementById('equipamentoPdfFile');
+    const file = fileInput?.files[0];
+    
+    if (!file) {
+        mostrarToast('Selecione um arquivo PDF', 'error');
+        return;
+    }
+    
+    if (file.size > 16 * 1024 * 1024) {
+        mostrarToast('Arquivo muito grande. Tamanho máximo: 16MB', 'error');
+        return;
+    }
+    
+    // Mostrar progresso
+    document.getElementById('uploadEquipamentoProgress').style.display = 'block';
+    document.getElementById('btnUploadEquipamentoPDF').disabled = true;
+    document.getElementById('equipamentoProgressStatus').textContent = 'Enviando arquivo...';
+    document.getElementById('equipamentoProgressFill').style.width = '30%';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/api/upload-equipamento-pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        document.getElementById('equipamentoProgressFill').style.width = '80%';
+        document.getElementById('equipamentoProgressStatus').textContent = 'Processando resposta...';
+        
+        const data = await response.json();
+        
+        document.getElementById('equipamentoProgressFill').style.width = '100%';
+        
+        if (data.success) {
+            document.getElementById('equipamentoProgressStatus').textContent = '✅ Equipamento criado!';
+            
+            // Mostrar preview dos dados
+            mostrarPreviewEquipamento(data.equipamento);
+            
+            mostrarToast(data.message, 'success');
+            
+            // Recarregar após 2 segundos
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            document.getElementById('equipamentoProgressStatus').textContent = '❌ Erro no processamento';
+            mostrarToast(data.message || 'Erro ao processar PDF', 'error');
+            document.getElementById('btnUploadEquipamentoPDF').disabled = false;
+        }
+    } catch (error) {
+        console.error('Erro no upload:', error);
+        document.getElementById('equipamentoProgressStatus').textContent = '❌ Erro de conexão';
+        mostrarToast('Erro de conexão: ' + error.message, 'error');
+        document.getElementById('btnUploadEquipamentoPDF').disabled = false;
+    }
+}
+
+function mostrarPreviewEquipamento(equipamento) {
+    const previewArea = document.getElementById('equipamentoPreviewArea');
+    const previewContent = document.getElementById('equipamentoPreviewContent');
+    
+    let html = `
+        <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e5ec;">
+            <p><strong>🏭 Nome:</strong> ${equipamento.nome}</p>
+            <p><strong>🔖 Modelo:</strong> ${equipamento.modelo || 'Não informado'}</p>
+            <p><strong>🏢 Fabricante:</strong> ${equipamento.fabricante || 'Não informado'}</p>
+            <p><strong>📋 Tipo:</strong> ${equipamento.tipo || 'Não informado'}</p>
+            <p><strong>📝 Itens de Checklist:</strong> ${equipamento.itens}</p>
+    `;
+    
+    if (equipamento.itens > 0) {
+        html += `<p style="color: #40b049; margin-top: 5px;"><i class="fas fa-check-circle"></i> Checklist importado automaticamente</p>`;
+    }
+    
+    html += `</div>`;
+    
+    previewContent.innerHTML = html;
+    previewArea.style.display = 'block';
+}
+
+// Adicionar botão no modal de gerenciamento
+function adicionarBotaoUploadEquipamento() {
+    // Esta função será chamada quando o modal abrir
+    const toolbar = document.querySelector('#modalGerenciarEquipamentos .modal-content > div:first-child');
+    if (toolbar) {
+        // Verificar se o botão já existe
+        if (!document.getElementById('btnUploadEquipamento')) {
+            const novoBotao = document.createElement('button');
+            novoBotao.id = 'btnUploadEquipamento';
+            novoBotao.className = 'btn';
+            novoBotao.style.cssText = 'width: auto; padding: 8px 16px; background: #20643f;';
+            novoBotao.innerHTML = '<i class="fas fa-file-pdf"></i> Importar Equipamento de PDF';
+            novoBotao.onclick = function() {
+                fecharModalGerenciarEquipamentos();
+                abrirModalUploadEquipamentoPDF();
+            };
+            toolbar.appendChild(novoBotao);
+        }
+    }
+}
+
+// Modificar a função abrirModalGerenciarEquipamentos para incluir o novo botão
+const abrirModalGerenciarEquipamentosOriginal = abrirModalGerenciarEquipamentos;
+abrirModalGerenciarEquipamentos = function() {
+    abrirModalGerenciarEquipamentosOriginal();
+    setTimeout(adicionarBotaoUploadEquipamento, 100); // Pequeno delay para garantir que o modal abriu
+};
+
+// Exportar novas funções
+window.abrirModalUploadEquipamentoPDF = abrirModalUploadEquipamentoPDF;
+window.fecharModalUploadEquipamentoPDF = fecharModalUploadEquipamentoPDF;
+window.handleEquipamentoFileSelect = handleEquipamentoFileSelect;
+window.uploadEquipamentoPDF = uploadEquipamentoPDF;
+
 // ==================== EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL ====================
 
 window.abrirModalUploadPDF = abrirModalUploadPDF;

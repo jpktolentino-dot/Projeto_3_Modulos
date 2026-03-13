@@ -620,6 +620,96 @@ def upload_checklist_pdf():
             'message': f'Erro no processamento: {str(e)}'
         })
 
+@app.route('/api/upload-equipamento-pdf', methods=['POST'])
+@login_required
+def upload_equipamento_pdf():
+    """Upload de PDF para criar novo equipamento com checklist"""
+    
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar se arquivo foi enviado
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'Nenhum arquivo enviado'})
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'Nome de arquivo vazio'})
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'message': 'Apenas arquivos PDF são permitidos'})
+    
+    try:
+        # Salvar arquivo temporariamente
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Processar PDF com Groq para extrair dados do equipamento e checklist
+        from groq_service import groq_processor_equipamento
+        resultado = groq_processor_equipamento.processar_pdf_equipamento(filepath)
+        
+        # Remover arquivo temporário
+        os.remove(filepath)
+        
+        if resultado['success']:
+            # Criar novo equipamento
+            equipamento = Equipamento(
+                nome=resultado['equipamento']['nome'],
+                modelo=resultado['equipamento'].get('modelo', ''),
+                fabricante=resultado['equipamento'].get('fabricante', ''),
+                tipo=resultado['equipamento'].get('tipo', ''),
+                manual_pdf=f'/uploads/{filename}'  # Salvar referência ao PDF
+            )
+            
+            db.session.add(equipamento)
+            db.session.flush()  # Para obter o ID
+            
+            # Adicionar itens padrão do checklist
+            itens_adicionados = 0
+            if 'itens_checklist' in resultado and resultado['itens_checklist']:
+                for i, item in enumerate(resultado['itens_checklist']):
+                    item_padrao = ItemPadraoChecklist(
+                        equipamento_id=equipamento.id,
+                        sistema=item.get('sistema', 'Geral'),
+                        descricao=item.get('descricao', item.get('ponto_inspecao', '')),
+                        ordem=i
+                    )
+                    db.session.add(item_padrao)
+                    itens_adicionados += 1
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Equipamento "{equipamento.nome}" criado com {itens_adicionados} itens de checklist!',
+                'equipamento': {
+                    'id': equipamento.id,
+                    'nome': equipamento.nome,
+                    'modelo': equipamento.modelo,
+                    'fabricante': equipamento.fabricante,
+                    'tipo': equipamento.tipo,
+                    'itens': itens_adicionados
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': resultado.get('message', 'Erro ao processar PDF')
+            })
+            
+    except Exception as e:
+        # Tentar remover arquivo se existir
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        return jsonify({
+            'success': False,
+            'message': f'Erro no processamento: {str(e)}'
+        })
+
+
 @app.route('/api/processar-checklist-texto', methods=['POST'])
 @login_required
 def processar_checklist_texto():
