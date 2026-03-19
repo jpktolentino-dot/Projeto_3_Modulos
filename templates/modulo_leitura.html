@@ -1,3 +1,4 @@
+<!-- templates/modulo_leitura.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,6 +10,247 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modulo_leitura.css') }}">
+    <style>
+        /* Estilos adicionais para o modal de upload */
+        .upload-area {
+            border: 2px dashed #40b049;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #f9fbfd;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area:hover {
+            background: #f0f9f0;
+            border-color: #20643f;
+        }
+        
+        .upload-area i {
+            font-size: 3rem;
+            color: #40b049;
+            margin-bottom: 10px;
+        }
+        
+        .upload-area p {
+            color: #5a6f84;
+            margin-bottom: 5px;
+        }
+        
+        .upload-area small {
+            color: #7c8b9f;
+        }
+        
+        .upload-area.dragover {
+            background: #e8f5e9;
+            border-color: #20643f;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e5ec;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: #40b049;
+            transition: width 0.3s ease;
+        }
+        
+        .info-box {
+            background: #e9eff5;
+            border-left: 4px solid #20643f;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .info-box i {
+            font-size: 1.5rem;
+            color: #20643f;
+        }
+        
+        .info-box-content {
+            flex: 1;
+        }
+        
+        .info-box h4 {
+            color: #20643f;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        
+        .info-box p {
+            color: #5a6f84;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        .info-box ul {
+            margin-top: 8px;
+            padding-left: 20px;
+            color: #5a6f84;
+        }
+        
+        .preview-area {
+            background: #f9fbfd;
+            border: 1px solid #e0e5ec;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .preview-item {
+            padding: 10px;
+            border-bottom: 1px solid #e0e5ec;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+        
+        .preview-item i {
+            color: #40b049;
+        }
+        
+        .badge-sistema {
+            background: #e9eff5;
+            color: #20643f;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #5a6f84;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-btn:hover {
+            background: #e9eff5;
+            color: #20643f;
+        }
+        
+        .action-btn.delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .modal-lg {
+            max-width: 800px !important;
+        }
+        
+        .tipo-select-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .tipo-select-wrapper select,
+        .tipo-select-wrapper input {
+            flex: 1;
+        }
+        
+        .tipo-select-wrapper button {
+            width: auto;
+            padding: 12px 20px;
+            background: #40b049;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .tipo-select-wrapper button:hover {
+            background: #48c253;
+        }
+        
+        .btn-dourado {
+            background: #40b049;
+            color: white;
+        }
+        
+        .btn-dourado:hover {
+            background: #48c253;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .download-btn {
+            margin-left: auto;
+            color: #40b049;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .download-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .download-btn.pdf {
+            color: #dc3545;
+        }
+        
+        .download-btn.upload {
+            color: #40b049;
+        }
+        
+        .download-btn.edit {
+            color: #20643f;
+        }
+        
+        .download-btn.delete {
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body>
 <div class="loading" id="loading">
@@ -37,10 +279,21 @@
                 <input type="text" placeholder="Buscar equipamento..." id="searchInput" onkeyup="filtrarEquipamentos()">
             </div>
 
+            {% if usuario.perfil == 'pcm' %}
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-dourado" style="flex:1;" onclick="abrirModalCadastro()">
+                    <i class="fas fa-plus-circle"></i> Cadastrar Manual
+                </button>
+                <button class="btn" style="flex:1; background: #20643f;" onclick="abrirModalUploadIA()">
+                    <i class="fas fa-robot"></i> Importar com IA
+                </button>
+            </div>
+            {% endif %}
+
             <h3>Manuais Disponíveis</h3>
             <div class="card-list" id="equipamentosList">
                 {% for equipamento in equipamentos %}
-                <div class="card-item equipamento-item" data-nome="{{ equipamento.nome|lower }} {{ equipamento.modelo|lower }} {{ equipamento.fabricante|lower }}">
+                <div class="card-item equipamento-item" data-nome="{{ equipamento.nome|lower }} {{ equipamento.modelo|lower }} {{ equipamento.fabricante|lower }} {{ equipamento.tipo|lower }}">
                     <div class="card-icon">
                         {% if 'prensa' in equipamento.nome|lower %}
                         <i class="fas fa-cog"></i>
@@ -50,58 +303,84 @@
                         <i class="fas fa-compress"></i>
                         {% elif 'torno' in equipamento.nome|lower %}
                         <i class="fas fa-cut"></i>
+                        {% elif 'caminhão' in equipamento.nome|lower or 'daf' in equipamento.nome|lower %}
+                        <i class="fas fa-truck"></i>
                         {% else %}
                         <i class="fas fa-industry"></i>
                         {% endif %}
                     </div>
-                    <div>
+                    <div style="flex:1;">
                         <h3>{{ equipamento.nome }}</h3>
-                        <p style="color:#5a6f84;">{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                        <p style="color:#5a6f84; margin-bottom: 4px;">{{ equipamento.fabricante }} · {{ equipamento.tipo }}</p>
+                        <p style="font-size:0.8rem; color:#40b049;">{{ equipamento.modelo }}</p>
                     </div>
-                    <i class="fas fa-download download-btn" onclick="baixarManual({{ equipamento.id }})" title="Baixar manual"></i>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <!-- Ícone de PDF para download -->
+                        {% if equipamento.manual_pdf %}
+                        <i class="fas fa-file-pdf download-btn pdf" onclick="baixarManual({{ equipamento.id }})" title="Baixar manual (PDF)"></i>
+                        {% else %}
+                        <i class="fas fa-file-pdf download-btn" style="color: #5a6f84; opacity:0.5; cursor: not-allowed;" title="Sem manual disponível"></i>
+                        {% endif %}
+                        
+                        <!-- Botões de ação para usuários PCM -->
+                        {% if usuario.perfil == 'pcm' %}
+                        <i class="fas fa-upload download-btn upload" onclick="abrirModalUploadManual({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Upload de manual"></i>
+                        <i class="fas fa-edit download-btn edit" onclick="editarEquipamento({{ equipamento.id }})" title="Editar equipamento"></i>
+                        <i class="fas fa-trash download-btn delete" onclick="confirmarExcluirEquipamento({{ equipamento.id }}, '{{ equipamento.nome }}')" title="Excluir equipamento"></i>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-
-            {% if usuario.perfil == 'pcm' %}
-            <button class="btn btn-dourado" style="margin-top:24px;" onclick="abrirModalCadastro()">
-                <i class="fas fa-plus-circle"></i> Cadastrar Equipamento
-            </button>
-            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Modal de Cadastro de Equipamento -->
+<!-- Modal de Cadastro Manual -->
 <div class="modal" id="modalCadastro">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Cadastrar Equipamento</h3>
+            <h3 id="modalCadastroTitulo">Cadastrar Equipamento</h3>
             <button class="close-btn" onclick="fecharModalCadastro()">&times;</button>
         </div>
-        <form id="formCadastro" onsubmit="cadastrarEquipamento(event)">
+        <form id="formCadastro" onsubmit="salvarEquipamento(event)">
+            <input type="hidden" id="equipamentoId">
             <div class="form-group">
                 <label>Nome do Equipamento *</label>
-                <input type="text" id="equipamentoNome" required>
+                <input type="text" id="equipamentoNome" required placeholder="Ex: Prensa Hidráulica PH-2000">
             </div>
             <div class="form-group">
                 <label>Modelo</label>
-                <input type="text" id="equipamentoModelo">
+                <input type="text" id="equipamentoModelo" placeholder="Ex: PH-2000">
             </div>
             <div class="form-group">
                 <label>Fabricante</label>
-                <input type="text" id="equipamentoFabricante">
+                <input type="text" id="equipamentoFabricante" placeholder="Ex: HydroPress">
             </div>
             <div class="form-group">
                 <label>Tipo</label>
-                <select id="equipamentoTipo">
-                    <option value="Hidráulico">Hidráulico</option>
-                    <option value="Pneumático">Pneumático</option>
-                    <option value="Elétrico">Elétrico</option>
-                    <option value="Mecânico">Mecânico</option>
-                    <option value="Robótica">Robótica</option>
-                    <option value="Usinagem">Usinagem</option>
-                </select>
+                <div class="tipo-select-wrapper">
+                    <select id="equipamentoTipoSelect">
+                        <option value="">Selecione ou digite...</option>
+                        <option value="Hidráulico">Hidráulico</option>
+                        <option value="Pneumático">Pneumático</option>
+                        <option value="Elétrico">Elétrico</option>
+                        <option value="Mecânico">Mecânico</option>
+                        <option value="Robótica">Robótica</option>
+                        <option value="Usinagem">Usinagem</option>
+                        <option value="Veículo Pesado">Veículo Pesado</option>
+                        <option value="Compressor">Compressor</option>
+                        <option value="Motor">Motor</option>
+                        <option value="Bomba">Bomba</option>
+                        <option value="Prensa">Prensa</option>
+                        <option value="Torno">Torno</option>
+                        <option value="Fresadora">Fresadora</option>
+                        <option value="Retífica">Retífica</option>
+                    </select>
+                    <input type="text" id="equipamentoTipoInput" placeholder="Ou digite um tipo personalizado">
+                    <button type="button" onclick="usarTipoPersonalizado()">Usar</button>
+                </div>
+                <small style="color: #5a6f84;">Selecione um tipo ou digite um novo</small>
             </div>
             <div class="form-group">
                 <label>Link do Manual (PDF)</label>
@@ -111,6 +390,115 @@
         </form>
     </div>
 </div>
+
+<!-- Modal de Upload com IA -->
+<div class="modal" id="modalUploadIA">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3><i class="fas fa-robot" style="color: #20643f;"></i> Importar Equipamento com IA</h3>
+            <button class="close-btn" onclick="fecharModalUploadIA()">&times;</button>
+        </div>
+        
+        <div class="info-box">
+            <i class="fas fa-magic"></i>
+            <div class="info-box-content">
+                <h4>Como funciona?</h4>
+                <p>A IA vai analisar o PDF do manual e extrair automaticamente:</p>
+                <ul style="margin-top: 8px; padding-left: 20px; color: #5a6f84;">
+                    <li>✅ Nome do equipamento</li>
+                    <li>✅ Modelo</li>
+                    <li>✅ Fabricante</li>
+                    <li>✅ Tipo do equipamento</li>
+                </ul>
+                <p style="margin-top: 8px; color: #20643f;">O PDF será salvo e ficará disponível para download!</p>
+            </div>
+        </div>
+        
+        <form id="formUploadIA" onsubmit="uploadEquipamentoIA(event)">
+            <div class="form-group">
+                <label>Arquivo PDF do Manual *</label>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('iaPdfFile').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Clique para selecionar ou arraste o arquivo</p>
+                    <small>Arquivos .pdf até 16MB</small>
+                </div>
+                <input type="file" id="iaPdfFile" accept=".pdf" style="display: none;" onchange="handleIAFileSelect(this)">
+                <div id="iaFileInfo" style="display: none; margin-top: 10px; padding: 10px; background: #e9eff5; border-radius: 4px;">
+                    <i class="fas fa-file-pdf" style="color: #dc3545;"></i> <span id="iaFileName"></span>
+                </div>
+            </div>
+            
+            <div id="iaUploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="iaProgressFill" style="width: 0%;"></div>
+                </div>
+                <p style="text-align: center; color: #5a6f84;" id="iaProgressStatus">Processando PDF com IA...</p>
+            </div>
+            
+            <div id="iaPreviewArea" style="display: none; margin: 20px 0;">
+                <h4 style="color: #20643f; margin-bottom: 10px;">📋 Dados Extraídos:</h4>
+                <div class="preview-area" id="iaPreviewContent"></div>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalUploadIA()">Cancelar</button>
+                <button type="submit" class="btn" style="flex:2; background:#20643f;" id="btnUploadIA">
+                    <i class="fas fa-robot"></i> Processar com IA
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Upload de Manual -->
+<div class="modal" id="modalUploadManual">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalUploadManualTitulo">Upload de Manual</h3>
+            <button class="close-btn" onclick="fecharModalUploadManual()">&times;</button>
+        </div>
+        
+        <form id="formUploadManual">
+            <input type="hidden" id="uploadManualEquipamentoId">
+            
+            <div class="form-group">
+                <label>Selecione o arquivo PDF</label>
+                <input type="file" id="manualFile" accept=".pdf" required>
+                <small style="color: #5a6f84;">Tamanho máximo: 16MB</small>
+            </div>
+            
+            <div class="info-box" style="margin-top: 15px;">
+                <i class="fas fa-info-circle"></i>
+                <div class="info-box-content">
+                    <p>O arquivo será salvo e vinculado a este equipamento para download posterior.</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-outline" style="flex:1;" onclick="fecharModalUploadManual()">Cancelar</button>
+                <button type="submit" class="btn" style="flex:1; background: #40b049;">Enviar Manual</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal" id="modalConfirmacao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Ação</h3>
+            <button class="close-btn" onclick="fecharModalConfirmacao()">&times;</button>
+        </div>
+        <p id="modalMensagem"></p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button class="btn btn-dourado" style="flex:1;" id="modalConfirmarBtn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
 
 <script src="{{ url_for('static', filename='js/modulo_leitura.js') }}"></script>
 </body>

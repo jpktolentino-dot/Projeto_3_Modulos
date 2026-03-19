@@ -1,11 +1,12 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import uuid
 from functools import wraps
 from werkzeug.utils import secure_filename
-from groq_service import groq_processor
+from groq_service import groq_processor, groq_processor_equipamento, groq_processor_manual
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -41,8 +42,13 @@ class Usuario(db.Model):
     perfil = db.Column(db.String(20), nullable=False)  # 'manutentor', 'pcm', 'operador'
     modulo_acesso = db.Column(db.String(50))  # 'leitura', 'checklist', 'corretivas', 'todos'
     
+    # Relacionamentos com back_populates
+    checklists = db.relationship('Checklist', back_populates='operador', cascade='all, delete-orphan')
+    chamados = db.relationship('ChamadoCorretivo', back_populates='manutentor', cascade='all, delete-orphan')
+    
     def __repr__(self):
         return f'<Usuario {self.login}>'
+
 
 class Equipamento(db.Model):
     __tablename__ = 'equipamentos'
@@ -54,8 +60,14 @@ class Equipamento(db.Model):
     manual_pdf = db.Column(db.String(200))
     data_cadastro = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Relacionamentos com back_populates
+    itens_padrao = db.relationship('ItemPadraoChecklist', back_populates='equipamento', cascade='all, delete-orphan')
+    checklists = db.relationship('Checklist', back_populates='equipamento', cascade='all, delete-orphan')
+    chamados = db.relationship('ChamadoCorretivo', back_populates='equipamento', cascade='all, delete-orphan')
+    
     def __repr__(self):
         return f'<Equipamento {self.nome}>'
+
 
 class Checklist(db.Model):
     __tablename__ = 'checklists'
@@ -67,8 +79,11 @@ class Checklist(db.Model):
     observacoes = db.Column(db.Text)
     data_execucao = db.Column(db.DateTime)
     
-    equipamento = db.relationship('Equipamento')
-    operador = db.relationship('Usuario')
+    # Relacionamentos com back_populates
+    equipamento = db.relationship('Equipamento', back_populates='checklists')
+    operador = db.relationship('Usuario', back_populates='checklists')
+    itens = db.relationship('ItemChecklist', back_populates='checklist', cascade='all, delete-orphan')
+
 
 class ItemChecklist(db.Model):
     __tablename__ = 'itens_checklist'
@@ -78,7 +93,9 @@ class ItemChecklist(db.Model):
     status = db.Column(db.String(20), default='pendente')  # 'sim', 'nao', 'na', 'pendente'
     observacao = db.Column(db.String(500))  # Campo para observações do item
     
-    checklist = db.relationship('Checklist', backref='itens')
+    # Relacionamento com back_populates
+    checklist = db.relationship('Checklist', back_populates='itens')
+
 
 class ItemPadraoChecklist(db.Model):
     __tablename__ = 'itens_padrao_checklist'
@@ -88,7 +105,9 @@ class ItemPadraoChecklist(db.Model):
     descricao = db.Column(db.String(300), nullable=False)
     ordem = db.Column(db.Integer, default=0)
     
-    equipamento = db.relationship('Equipamento', backref='itens_padrao')
+    # Relacionamento com back_populates
+    equipamento = db.relationship('Equipamento', back_populates='itens_padrao')
+
 
 class ChamadoCorretivo(db.Model):
     __tablename__ = 'chamados'
@@ -102,8 +121,9 @@ class ChamadoCorretivo(db.Model):
     status = db.Column(db.String(20), default='aberto')  # 'aberto', 'em_andamento', 'concluido'
     data_abertura = db.Column(db.DateTime, default=datetime.utcnow)
     
-    equipamento = db.relationship('Equipamento')
-    manutentor = db.relationship('Usuario')
+    # Relacionamentos com back_populates
+    equipamento = db.relationship('Equipamento', back_populates='chamados')
+    manutentor = db.relationship('Usuario', back_populates='chamados')
 
 # ==================== FUNÇÕES AUXILIARES ====================
 
@@ -134,6 +154,37 @@ def modulo_required(modulo):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+# ==================== CONFIGURAÇÃO PARA SERVIR ARQUIVOS DE UPLOAD ====================
+
+@app.route('/uploads/<path:filename>')
+@login_required
+def uploaded_file(filename):
+    """Serve arquivos da pasta de uploads para download"""
+    try:
+        # Caminho completo do arquivo
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Verificar se o arquivo existe
+        if not os.path.exists(file_path):
+            print(f"❌ Arquivo não encontrado: {file_path}")
+            return jsonify({'success': False, 'message': 'Arquivo não encontrado'}), 404
+        
+        # Forçar download com nome original (removendo o UUID se houver)
+        original_filename = filename
+        if '_' in filename:
+            # Se tiver UUID_ formato, pegar a parte depois do primeiro _
+            original_filename = filename.split('_', 1)[-1]
+        
+        return send_from_directory(
+            app.config['UPLOAD_FOLDER'], 
+            filename,
+            as_attachment=True,
+            download_name=original_filename  # Nome original para download
+        )
+    except Exception as e:
+        print(f"❌ Erro ao servir arquivo: {e}")
+        return jsonify({'success': False, 'message': 'Erro ao baixar arquivo'}), 500
 
 # ==================== ROTAS PRINCIPAIS ====================
 
@@ -355,10 +406,6 @@ def iniciar_checklist():
                 status='pendente'
             )
             db.session.add(item)
-    else:
-        # Se não houver itens padrão, criar checklist vazio para preenchimento manual
-        # O usuário poderá adicionar itens manualmente depois
-        pass
     
     db.session.commit()
     
@@ -391,8 +438,6 @@ def adicionar_item_checklist(id):
     
     return jsonify({'success': True, 'item_id': item.id})
 
-
-
 @app.route('/api/checklist/<int:id>/item/<int:item_id>', methods=['PUT'])
 @login_required
 def atualizar_item_checklist(id, item_id):
@@ -418,7 +463,6 @@ def atualizar_item_checklist(id, item_id):
     db.session.commit()
     
     return jsonify({'success': True})
-
 
 @app.route('/api/checklist/<int:id>/item/<int:item_id>', methods=['DELETE'])
 @login_required
@@ -468,10 +512,7 @@ def excluir_checklist(id):
     
     checklist = Checklist.query.get_or_404(id)
     
-    # Exclui os itens do checklist primeiro
-    for item in checklist.itens:
-        db.session.delete(item)
-    
+    # Os itens serão excluídos automaticamente pelo cascade
     db.session.delete(checklist)
     db.session.commit()
     
@@ -647,7 +688,6 @@ def upload_equipamento_pdf():
         file.save(filepath)
         
         # Processar PDF com Groq para extrair dados do equipamento e checklist
-        from groq_service import groq_processor_equipamento
         resultado = groq_processor_equipamento.processar_pdf_equipamento(filepath)
         
         # Remover arquivo temporário
@@ -709,6 +749,77 @@ def upload_equipamento_pdf():
             'message': f'Erro no processamento: {str(e)}'
         })
 
+# ==================== ROTA PARA UPLOAD DE MANUAL ====================
+
+@app.route('/api/upload-manual-pdf', methods=['POST'])  # ← NOME DA ROTA DIFERENTE
+@login_required
+def upload_manual_pdf():  # ← NOME DA FUNÇÃO DIFERENTE
+    """Upload de manual PDF para um equipamento"""
+    
+    if session.get('usuario_perfil') != 'pcm':
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar se arquivo foi enviado
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'Nenhum arquivo enviado'})
+    
+    file = request.files['file']
+    equipamento_id = request.form.get('equipamento_id')
+    
+    if not equipamento_id:
+        return jsonify({'success': False, 'message': 'ID do equipamento não fornecido'})
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'Nome de arquivo vazio'})
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'message': 'Apenas arquivos PDF são permitidos'})
+    
+    try:
+        # Garantir que a pasta de uploads existe
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Criar nome seguro para o arquivo
+        filename = secure_filename(file.filename)
+        
+        # Criar nome único para evitar sobrescrita
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        # Salvar o arquivo
+        file.save(filepath)
+        print(f"📁 Arquivo salvo: {filepath}")
+        
+        # Atualizar o equipamento com o caminho do manual
+        equipamento = Equipamento.query.get_or_404(equipamento_id)
+        
+        # Se já existia um manual anterior, apagar o arquivo antigo (opcional)
+        if equipamento.manual_pdf:
+            old_file = equipamento.manual_pdf.replace('/uploads/', '')
+            old_path = os.path.join(app.config['UPLOAD_FOLDER'], old_file)
+            if os.path.exists(old_path) and os.path.isfile(old_path):
+                try:
+                    os.remove(old_path)
+                    print(f"🗑️ Arquivo antigo removido: {old_path}")
+                except:
+                    pass  # Se não conseguir apagar, continua
+        
+        # Atualizar o caminho no banco
+        equipamento.manual_pdf = f'/uploads/{unique_filename}'
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Manual enviado com sucesso!',
+            'manual_pdf': equipamento.manual_pdf
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro no upload: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao salvar arquivo: {str(e)}'
+        })
 
 @app.route('/api/processar-checklist-texto', methods=['POST'])
 @login_required
@@ -946,29 +1057,6 @@ def atualizar_chamado(id):
     db.session.commit()
     
     return jsonify({'success': True})
-
-# ==================== ROTAS PARA TEMPLATES ====================
-
-@app.route('/modulo/leitura/template')
-@login_required
-def template_leitura():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_leitura.html', usuario=usuario, equipamentos=equipamentos)
-
-@app.route('/modulo/checklist/template')
-@login_required
-def template_checklist():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_checklist.html', usuario=usuario, equipamentos=equipamentos)
-
-@app.route('/modulo/corretivas/template')
-@login_required
-def template_corretivas():
-    usuario = Usuario.query.get(session['usuario_id'])
-    equipamentos = Equipamento.query.all()
-    return render_template('modulo_corretivas.html', usuario=usuario, equipamentos=equipamentos)
 
 # ==================== INICIALIZAÇÃO DO BANCO ====================
 

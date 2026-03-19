@@ -1470,39 +1470,23 @@ function mostrarPreviewEquipamento(equipamento) {
     previewArea.style.display = 'block';
 }
 
-// Adicionar botão no modal de gerenciamento
+// Função para adicionar botão de upload no modal de gerenciamento
 function adicionarBotaoUploadEquipamento() {
-    // Esta função será chamada quando o modal abrir
     const toolbar = document.querySelector('#modalGerenciarEquipamentos .modal-content > div:first-child');
-    if (toolbar) {
-        // Verificar se o botão já existe
-        if (!document.getElementById('btnUploadEquipamento')) {
-            const novoBotao = document.createElement('button');
-            novoBotao.id = 'btnUploadEquipamento';
-            novoBotao.className = 'btn';
-            novoBotao.style.cssText = 'width: auto; padding: 8px 16px; background: #20643f;';
-            novoBotao.innerHTML = '<i class="fas fa-file-pdf"></i> Importar Equipamento de PDF';
-            novoBotao.onclick = function() {
-                fecharModalGerenciarEquipamentos();
-                abrirModalUploadEquipamentoPDF();
-            };
-            toolbar.appendChild(novoBotao);
-        }
+    if (toolbar && !document.getElementById('btnUploadEquipamento')) {
+        const novoBotao = document.createElement('button');
+        novoBotao.id = 'btnUploadEquipamento';
+        novoBotao.className = 'btn';
+        novoBotao.style.cssText = 'width: auto; padding: 8px 16px; background: #20643f;';
+        novoBotao.innerHTML = '<i class="fas fa-file-pdf"></i> Importar Equipamento de PDF';
+        novoBotao.onclick = function() {
+            fecharModalGerenciarEquipamentos();
+            abrirModalUploadEquipamentoPDF();
+        };
+        toolbar.appendChild(novoBotao);
+        console.log('✅ Botão de upload adicionado ao modal');
     }
 }
-
-// Modificar a função abrirModalGerenciarEquipamentos para incluir o novo botão
-const abrirModalGerenciarEquipamentosOriginal = abrirModalGerenciarEquipamentos;
-abrirModalGerenciarEquipamentos = function() {
-    abrirModalGerenciarEquipamentosOriginal();
-    setTimeout(adicionarBotaoUploadEquipamento, 100); // Pequeno delay para garantir que o modal abriu
-};
-
-// Exportar novas funções
-window.abrirModalUploadEquipamentoPDF = abrirModalUploadEquipamentoPDF;
-window.fecharModalUploadEquipamentoPDF = fecharModalUploadEquipamentoPDF;
-window.handleEquipamentoFileSelect = handleEquipamentoFileSelect;
-window.uploadEquipamentoPDF = uploadEquipamentoPDF;
 
 // ==================== EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL ====================
 
@@ -1536,8 +1520,6 @@ window.confirmarExcluirChecklist = confirmarExcluirChecklist;
 window.fecharModalConfirmacao = fecharModalConfirmacao;
 window.showLoading = showLoading;
 window.hideLoading = hideLoading;
-
-// NOVAS FUNÇÕES EXPORTADAS
 window.atualizarStatusItem = atualizarStatusItem;
 window.abrirModalObservacao = abrirModalObservacao;
 window.fecharModalObservacao = fecharModalObservacao;
@@ -1551,3 +1533,23 @@ window.abrirModalMultiplasLinhas = abrirModalMultiplasLinhas;
 window.fecharModalMultiplasLinhas = fecharModalMultiplasLinhas;
 window.adicionarMultiplasLinhas = adicionarMultiplasLinhas;
 window.finalizarChecklist = finalizarChecklist;
+window.abrirModalUploadEquipamentoPDF = abrirModalUploadEquipamentoPDF;
+window.fecharModalUploadEquipamentoPDF = fecharModalUploadEquipamentoPDF;
+window.handleEquipamentoFileSelect = handleEquipamentoFileSelect;
+window.uploadEquipamentoPDF = uploadEquipamentoPDF;
+
+// ==================== CORREÇÃO: ADICIONAR BOTÃO DE UPLOAD ====================
+// Executar depois que tudo estiver carregado
+setTimeout(() => {
+    // Guardar referência da função original
+    const abrirModalGerenciarEquipamentosOriginal = window.abrirModalGerenciarEquipamentos;
+    
+    // Sobrescrever apenas se a função original existir
+    if (abrirModalGerenciarEquipamentosOriginal) {
+        window.abrirModalGerenciarEquipamentos = function() {
+            abrirModalGerenciarEquipamentosOriginal();
+            setTimeout(adicionarBotaoUploadEquipamento, 100);
+        };
+        console.log('✅ Função abrirModalGerenciarEquipamentos personalizada');
+    }
+}, 500); // Pequeno delay para garantir que tudo foi carregado
